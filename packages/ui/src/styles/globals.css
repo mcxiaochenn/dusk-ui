@@ -1,0 +1,151 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* ═══════════════════════════════════════════════════════
+   Tailwind 扫描范围
+   ─────────────────────────────────────────────────────────
+   组件源码位于 packages/ui，不在应用工程的 src 目录下，
+   Tailwind 默认不会扫描到它。若不显式声明，语义工具类
+   （bg-surface-1 / text-foreground / rounded-card 等）不会生成，
+   页面会完全失去样式。
+
+   @source 让 Tailwind 扫描本包源码，从而两个工程都能拿到同一套类。
+   注意：路径相对于本文件所在位置解析，因此用相对路径即可，
+   两个应用工程共用同一份 globals.css，无需各自配置。
+   ═══════════════════════════════════════════════════════ */
+@source '../components';
+@source '../demo';
+
+/* ═══════════════════════════════════════════════════════
+   基础层
+   ═══════════════════════════════════════════════════════ */
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    /* 深浅主题切换不应产生横向抖动 */
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background-color: var(--surface-0);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* 主题切换走颜色过渡，不参与布局 */
+    transition:
+      background-color var(--duration-dialog) var(--ease-standard),
+      color var(--duration-dialog) var(--ease-standard);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  /* 焦点样式只在键盘导航时出现。
+     用 outline 而非 box-shadow，避免被父级圆角/裁切吞掉。 */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    background-color: var(--accent-subtle-hover);
+    color: var(--foreground);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   连续曲率圆角 — 渐进增强
+   @supports 保证不支持的引擎完全忽略本段，保留 border-radius。
+   :where() 保持零特异性，组件可在局部显式退出。
+   ═══════════════════════════════════════════════════════ */
+@supports (corner-shape: squircle) {
+  :where(*, *::before, *::after) {
+    corner-shape: var(--corner-shape, var(--corner-shape-continuous));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   材质工具类
+   B 玻璃表面：仅用于 Dock / Toast / 小型浮层。
+   不在卡片、按钮或整页背景上使用。
+   ═══════════════════════════════════════════════════════ */
+@utility glass {
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md), var(--glass-highlight);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+
+/* 弹窗/大浮层：更接近不透明，保证正文可读 */
+@utility glass-strong {
+  background-color: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg), var(--glass-highlight);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+
+/* 不支持 backdrop-filter 时回退为足够不透明的表面。
+   用 @supports 而非设备检测，机制简单可靠。 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background-color: var(--surface-fallback);
+    border-color: var(--border);
+  }
+}
+
+/* 用户明确要求降低透明度时，直接给实色 */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong {
+    background-color: var(--surface-fallback);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--border);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   响应式收敛
+   移动端减少模糊强度与叠加层数，不改变布局。
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  :root {
+    --glass-blur: 12px;
+    --gutter: var(--space-4);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   减弱动画
+   保留即时状态切换（颜色/透明度），取消位移、缩放、回弹。
+   弹窗与通知改为纯淡入淡出，不产生位移。
+   ═══════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,338 @@
+/*
+ * Dusk UI — 设计令牌
+ * ─────────────────────────────────────────────────────────
+ * 全仓库唯一的视觉事实来源。组件只允许引用语义令牌，
+ * 不允许出现裸色号（#hex）或重复定义的圆角/阴影/时长。
+ *
+ * 命名约定参考 shadcn/ui 的「表面 + foreground 配对」思路，
+ * 但取值来自博客 blog.mcxiaochen.top 的实际设计（色相 170）。
+ * 详见 docs/DESIGN.md「设计来源与融合方式」。
+ */
+
+:root {
+  /* ═══════════════════════════════════════════════════════
+     色相 — 单一色相驱动整个中性色阶
+     来源：blog.mcxiaochen.top 实际取色 oklch(.97 .005 170)
+     改这一个值即可整体偏移色彩身份。
+     ═══════════════════════════════════════════════════════ */
+  --hue: 170;
+
+  /* ═══════════════════════════════════════════════════════
+     表面层级 — 内容表面用实色，靠明度与边框区分层级
+     --surface-0 页面底/ --surface-1 卡片 / -2 悬浮内容 / -3 更强分隔
+     ═══════════════════════════════════════════════════════ */
+  --surface-0: oklch(0.965 0.008 var(--hue));
+  --surface-1: oklch(0.995 0.004 var(--hue));
+  --surface-2: oklch(0.945 0.012 var(--hue));
+  --surface-3: oklch(0.905 0.014 var(--hue));
+
+  /* 正文三级前景 */
+  --foreground: oklch(0.205 0.018 var(--hue));
+  --foreground-secondary: oklch(0.395 0.020 var(--hue));
+  --foreground-muted: oklch(0.505 0.018 var(--hue));
+
+  /* 反色表面（用于主按钮等高强调面） */
+  --foreground-inverse: oklch(0.985 0.004 var(--hue));
+
+  /* ═══════════════════════════════════════════════════════
+     强调色 — 低饱和青绿，来自博客色相
+     Chroma 上限 0.16，避免工具界面出现糖果色。
+     ═══════════════════════════════════════════════════════ */
+  --accent: oklch(0.505 0.115 var(--hue));
+  --accent-hover: oklch(0.455 0.110 var(--hue));
+  --accent-bright: oklch(0.615 0.125 var(--hue));
+  --accent-foreground: oklch(0.985 0.010 var(--hue));
+  --accent-subtle: oklch(0.505 0.115 var(--hue) / 0.10);
+  --accent-subtle-hover: oklch(0.505 0.115 var(--hue) / 0.16);
+
+  /* 边框 */
+  --border: oklch(0.885 0.010 var(--hue));
+  --border-subtle: oklch(0.925 0.008 var(--hue));
+  --border-strong: oklch(0.815 0.014 var(--hue));
+
+  /* 焦点环：仅 focus-visible 时出现，不参与静态布局 */
+  --ring: oklch(0.505 0.115 var(--hue));
+  --ring-offset: oklch(0.995 0.004 var(--hue));
+
+  /* ═══════════════════════════════════════════════════════
+     语义状态色
+     每个状态三档：base（图标/文字）/ subtle（底色）/ border
+     底色与边框供通知、标签、状态点使用。
+     ═══════════════════════════════════════════════════════ */
+  --success: oklch(0.505 0.135 155);
+  --success-subtle: oklch(0.955 0.030 155);
+  --success-border: oklch(0.845 0.070 155);
+
+  --warning: oklch(0.545 0.130 68);
+  --warning-subtle: oklch(0.960 0.038 78);
+  --warning-border: oklch(0.855 0.078 76);
+
+  --danger: oklch(0.535 0.185 26);
+  --danger-subtle: oklch(0.955 0.026 26);
+  --danger-border: oklch(0.850 0.070 26);
+
+  --info: oklch(0.505 0.115 235);
+  --info-subtle: oklch(0.955 0.026 235);
+  --info-border: oklch(0.850 0.062 235);
+
+  /* ═══════════════════════════════════════════════════════
+     材质 — 三种表面角色，详见 DESIGN.md「材质」
+     A内容表面：实色，靠明度+边框分层
+     B 玻璃表面：半透明 + backdrop-filter，仅用于悬浮控件
+     C 遮罩：只负责隔离背景，不做模糊主体
+     ═══════════════════════════════════════════════════════ */
+  --glass-bg: oklch(0.985 0.006 var(--hue) / 0.62);
+  --glass-bg-strong: oklch(0.990 0.005 var(--hue) / 0.88);
+  --glass-border: oklch(0.860 0.012 var(--hue) / 0.55);
+  --glass-highlight: inset 0 0.5px 0 oklch(1 0 0 / 0.65);
+  --glass-blur: 20px;
+  --glass-saturation: 145%;
+
+  /* 遮罩：遮罩负责隔离背景，弹窗主体保持高可读性 */
+  --overlay: oklch(0.205 0.018 var(--hue) / 0.42);
+
+  /* ═══════════════════════════════════════════════════════
+     圆角 — 连续、柔和、有层级
+     内层圆角必须小于外层，避免角部间距失衡。
+     ═══════════════════════════════════════════════════════ */
+  --radius-control: 12px; /* 输入框、常规按钮 */
+  --radius-float: 16px; /* 通知、小型浮层 */
+  --radius-card: 20px; /* 卡片 */
+  --radius-dialog: 24px; /* 弹窗 */
+  --radius-dock: 24px; /* Dock 外壳 */
+  --radius-pill: 999px; /* 标签、胶囊控件 */
+
+  /* 连续曲率：渐进增强。不支持的引擎忽略并回退到 border-radius */
+  --corner-shape-continuous: squircle;
+
+  /* ═══════════════════════════════════════════════════════
+     阴影 — 四级。玻璃表面额外叠加 --glass-highlight 内侧高光。
+     ═══════════════════════════════════════════════════════ */
+  --shadow-xs: 0 1px 2px oklch(0.205 0.018 var(--hue) / 0.05);
+  --shadow-sm: 0 2px 6px oklch(0.205 0.018 var(--hue) / 0.07);
+  --shadow-md: 0 6px 16px oklch(0.205 0.018 var(--hue) / 0.10);
+  --shadow-lg: 0 16px 40px oklch(0.205 0.018 var(--hue) / 0.14);
+
+  /* ═══════════════════════════════════════════════════════
+     间距 — 4px 步进
+     ═══════════════════════════════════════════════════════ */
+  --space-1: 0.25rem; /*  4px */
+  --space-2: 0.5rem; /*  8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+  --space-24: 6rem; /* 96px —— 浮动元素遮挡正文时的底部留白 */
+
+  /* ═══════════════════════════════════════════════════════
+     字体 — 仅本机系统字体栈，含中文回退。
+     不请求 Google Fonts，不打包中文 web font。
+     ═══════════════════════════════════════════════════════ */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Source Han Sans SC', 'Noto Sans CJK SC', sans-serif;
+  --font-mono:
+    ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, 'Sarasa Mono SC',
+    monospace;
+
+  /* 字阶 —— 工具界面偏紧，1.2 左右 */
+  --text-xs: 0.75rem; /* 12px 辅助文字、标签 */
+  --text-sm: 0.8125rem; /* 13px 次要正文 */
+  --text-base: 0.875rem; /* 14px 默认正文 */
+  --text-md: 1rem; /* 16px 强调正文 */
+  --text-lg: 1.125rem; /* 18px 小标题 */
+  --text-xl: 1.375rem; /* 22px 区块标题 */
+  --text-2xl: 1.875rem; /* 30px 页面标题 */
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* 字号越大字距越紧 */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+
+  /* 等宽数字：统计数值必须开启，避免跳动时宽度变化 */
+  --numeric: tabular-nums;
+
+  /* ═══════════════════════════════════════════════════════
+     尺寸 — 交互目标下限
+     ═══════════════════════════════════════════════════════ */
+  --size-control: 40px; /* 常规交互目标 */
+  --size-control-mobile: 44px; /* 移动端主要操作 */
+  --size-icon-sm: 16px;
+  --size-icon: 18px;
+  --size-icon-lg: 20px;
+
+  /* ═══════════════════════════════════════════════════════
+     布局
+     ═══════════════════════════════════════════════════════ */
+  --page-max-width: 1280px;
+  --gutter: var(--space-6);
+  --dock-height: 72px;
+
+  /* ═══════════════════════════════════════════════════════
+     动效时长 — 与 docs/MOTION.md 一致
+     ═══════════════════════════════════════════════════════ */
+  --duration-feedback: 150ms; /* 状态反馈 */
+  --duration-dialog: 200ms; /* 弹窗进退场 */
+  --duration-enter: 300ms; /* 内容入场 */
+  --duration-stagger: 50ms; /* 列表错峰单步 */
+
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* 兜底：支持 prefers-reduced-transparency 的浏览器直接给实色 */
+  --surface-fallback: var(--surface-1);
+}
+
+/* ═══════════════════════════════════════════════════════
+   深色主题 — 覆盖颜色、玻璃、阴影。
+   间距、圆角、时长、字体、布局令牌与主题无关，不重复定义。
+   ═══════════════════════════════════════════════════════ */
+.dark {
+  --surface-0: oklch(0.155 0.012 var(--hue));
+  --surface-1: oklch(0.205 0.014 var(--hue));
+  --surface-2: oklch(0.250 0.016 var(--hue));
+  --surface-3: oklch(0.300 0.018 var(--hue));
+
+  --foreground: oklch(0.940 0.008 var(--hue));
+  --foreground-secondary: oklch(0.775 0.014 var(--hue));
+  --foreground-muted: oklch(0.640 0.014 var(--hue));
+
+  --foreground-inverse: oklch(0.180 0.014 var(--hue));
+
+  --accent: oklch(0.720 0.115 var(--hue));
+  --accent-hover: oklch(0.780 0.115 var(--hue));
+  --accent-bright: oklch(0.820 0.110 var(--hue));
+  --accent-foreground: oklch(0.170 0.020 var(--hue));
+  --accent-subtle: oklch(0.720 0.115 var(--hue) / 0.14);
+  --accent-subtle-hover: oklch(0.720 0.115 var(--hue) / 0.22);
+
+  --border: oklch(0.310 0.014 var(--hue));
+  --border-subtle: oklch(0.260 0.012 var(--hue));
+  --border-strong: oklch(0.420 0.018 var(--hue));
+
+  --ring: oklch(0.720 0.115 var(--hue));
+  --ring-offset: oklch(0.205 0.014 var(--hue));
+
+  /* 状态色在深色下需提亮，保持同样的低饱和基调 */
+  --success: oklch(0.760 0.140 155);
+  --success-subtle: oklch(0.300 0.048 155);
+  --success-border: oklch(0.430 0.070 155);
+
+  --warning: oklch(0.790 0.125 76);
+  --warning-subtle: oklch(0.310 0.048 76);
+  --warning-border: oklch(0.440 0.072 76);
+
+  --danger: oklch(0.720 0.160 26);
+  --danger-subtle: oklch(0.300 0.056 26);
+  --danger-border: oklch(0.440 0.082 26);
+
+  --info: oklch(0.740 0.110 235);
+  --info-subtle: oklch(0.300 0.044 235);
+  --info-border: oklch(0.430 0.066 235);
+
+  /* 深色玻璃：不是简单反转，底色更暗、边框更亮、模糊略降 */
+  --glass-bg: oklch(0.240 0.014 var(--hue) / 0.55);
+  --glass-bg-strong: oklch(0.235 0.014 var(--hue) / 0.90);
+  --glass-border: oklch(1 0 0 / 0.14);
+  --glass-highlight: inset 0 0.5px 0 oklch(1 0 0 / 0.12);
+  --glass-blur: 18px;
+  --glass-saturation: 130%;
+
+  --overlay: oklch(0.100 0.010 var(--hue) / 0.58);
+
+  /* 深色下阴影靠不透明度而非扩散表达层级 */
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.20);
+  --shadow-sm: 0 2px 6px oklch(0 0 0 / 0.28);
+  --shadow-md: 0 6px 16px oklch(0 0 0 / 0.36);
+  --shadow-lg: 0 16px 40px oklch(0 0 0 / 0.48);
+
+  --surface-fallback: var(--surface-1);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Tailwind 桥接
+   把令牌映射为工具类：bg-surface-1 / text-foreground /
+   rounded-card / shadow-md / duration-feedback …
+   语义令牌在 :root / .dark 中定义，此处只做别名。
+   ═══════════════════════════════════════════════════════ */
+@theme inline {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-inverse: var(--foreground-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-bright: var(--accent-bright);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-subtle-hover: var(--accent-subtle-hover);
+
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-border: var(--danger-border);
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-border: var(--info-border);
+
+  --color-overlay: var(--overlay);
+
+  --radius-control: var(--radius-control);
+  --radius-float: var(--radius-float);
+  --radius-card: var(--radius-card);
+  --radius-dialog: var(--radius-dialog);
+  --radius-dock: var(--radius-dock);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-md: var(--text-md);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+
+  --ease-standard: var(--ease-standard);
+  --ease-entrance: var(--ease-entrance);
+  --ease-exit: var(--ease-exit);
+
+  --animate-feedback: var(--duration-feedback);
+  --animate-dialog: var(--duration-dialog);
+  --animate-enter: var(--duration-enter);
+}
