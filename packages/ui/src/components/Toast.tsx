@@ -7,6 +7,14 @@ import { POP_INITIAL, SPRING, TWEEN } from '../motion/motion'
 export type ToastTone = 'success' | 'warning' | 'danger' | 'info'
 
 /**
+ * 自动关闭时长的默认值（毫秒）。
+ *
+ * 这是「不传 duration 时用多少」的唯一来源，调用方不必重复写同一个数字。
+ * 需要不同时长时显式传入 `duration`，或在包装层统一配置。
+ */
+export const TOAST_DEFAULT_DURATION = 5000
+
+/**
  * 状态 → 图标 + 语义色。
  * 每个状态同时具备「图标形状」与「颜色」，
  * 不依赖颜色单独传达状态（色觉障碍用户可凭图标区分）。
@@ -18,6 +26,15 @@ const TONE: Record<
     label: string
     className: string
     iconClassName: string
+    /**
+     * 倒计时进度条的底色。
+     *
+     * 必须写成完整的字面量类名，不能由 iconClassName 拼接得出。
+     * Tailwind 在构建时静态扫描源码，运行时拼出来的类名不会被生成，
+     * 进度条会拿到一个不存在的 class，背景色退化为透明 ——
+     * 元素和宽度动画都正常，只是看不见。
+     */
+    barClassName: string
   }
 > = {
   success: {
@@ -25,24 +42,28 @@ const TONE: Record<
     label: '成功',
     className: 'border-success-border',
     iconClassName: 'text-success',
+    barClassName: 'bg-success',
   },
   warning: {
     icon: TriangleAlert,
     label: '警告',
     className: 'border-warning-border',
     iconClassName: 'text-warning',
+    barClassName: 'bg-warning',
   },
   danger: {
     icon: XCircle,
     label: '错误',
     className: 'border-danger-border',
     iconClassName: 'text-danger',
+    barClassName: 'bg-danger',
   },
   info: {
     icon: Info,
     label: '提示',
     className: 'border-info-border',
     iconClassName: 'text-info',
+    barClassName: 'bg-info',
   },
 }
 
@@ -50,8 +71,20 @@ export interface ToastData {
   tone: ToastTone
   title: string
   description?: string
-  /** 自动关闭时长（毫秒）。传0 表示不自动关闭 */
+  /**
+   * 自动关闭时长（毫秒）。不传时用 TOAST_DEFAULT_DURATION。
+   * 传 0 或负数表示不自动关闭，也不显示倒计时。
+   */
   duration?: number
+  /**
+   * 是否显示倒计时进度条。
+   *
+   * - 不传：跟随 duration，即存在自动关闭计时器就显示
+   * - 传 false：强制不显示（计时仍在后台进行，通知照常自动关闭）
+   * - 传 true：不会凭空造出倒计时；duration <= 0 时依然不显示，
+   *   因为「没有计时器却画一根进度条」会误导用户
+   */
+  showCountdown?: boolean
 }
 
 export interface ToastProps extends ToastData {
@@ -70,12 +103,18 @@ export function Toast({
   tone,
   title,
   description,
-  duration = 5000,
+  duration = TOAST_DEFAULT_DURATION,
+  showCountdown,
   onClose,
 }: ToastProps) {
   const reduceMotion = useReducedMotion()
   const meta = TONE[tone]
   const Icon = meta.icon
+
+  /** 是否存在自动关闭计时器 */
+  const hasTimer = duration > 0
+  /** 是否绘制进度条：显式关闭优先，否则只有确实在计时时才画 */
+  const withCountdown = showCountdown === false ? false : hasTimer
 
   /** 剩余毫秒。用 ref 保存，避免重渲染计时逻辑。 */
   const remainingRef = React.useRef(duration)
@@ -85,7 +124,7 @@ export function Toast({
   // 单一计时器：每帧按实际流逝时间扣减剩余量。
   // 不依赖 requestAnimationFrame 是否被节流，卸载时明确清理。
   React.useEffect(() => {
-    if (duration <= 0 || paused) return
+    if (!hasTimer || paused) return
 
     let raf = 0
     let last = performance.now()
@@ -105,7 +144,7 @@ export function Toast({
 
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [duration, paused, onClose])
+  }, [duration, hasTimer, paused, onClose])
 
   return (
     <motion.div
@@ -153,10 +192,10 @@ export function Toast({
       </button>
 
       {/* 倒计时进度：暂停时宽度冻结，与实际剩余时间一致 */}
-      {duration > 0 ? (
+      {withCountdown ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-border-subtle">
           <div
-            className={cn('h-full', meta.iconClassName.replace('text-', 'bg-'))}
+            className={cn('h-full', meta.barClassName)}
             style={{
               width: `${progress * 100}%`,
               transition: paused ? 'none' : undefined,

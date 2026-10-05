@@ -19,8 +19,11 @@ export type { SkeletonProps } from './components/Skeleton'
 export { StatCard } from './components/StatCard'
 export type { StatCardProps, StatTone } from './components/StatCard'
 
-export { Toast, ToastViewport } from './components/Toast'
+export { Toast, ToastViewport, TOAST_DEFAULT_DURATION } from './components/Toast'
 export type { ToastProps, ToastData, ToastTone } from './components/Toast'
+
+export { Switch } from './components/Switch'
+export type { SwitchProps } from './components/Switch'
 
 export { Dialog } from './components/Dialog'
 export type { DialogProps } from './components/Dialog'

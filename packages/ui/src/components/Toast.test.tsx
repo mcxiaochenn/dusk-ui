@@ -162,4 +162,59 @@ describe('Toast 倒计时', () => {
     // 每个 tone 的图标带不同的语义色类，同时图标形状本身也不同
     expect(new Set(labels).size).toBe(4)
   })
+
+  /* ── 倒计时进度条：显示开关与颜色 ── */
+
+  /** 进度条是带 width 样式的内层 div */
+  const barOf = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>('div[style*="width"]')
+
+  it('默认显示进度条（存在计时器时）', () => {
+    const { container } = render(
+      <Toast tone="info" title="提示" duration={3000} onClose={vi.fn()} />,
+    )
+    expect(barOf(container)).toBeTruthy()
+  })
+
+  it('showCountdown=false 时不渲染进度条，但计时照常进行', () => {
+    const onClose = vi.fn()
+    const { container } = render(
+      <Toast tone="info" title="提示" duration={900} showCountdown={false} onClose={onClose} />,
+    )
+
+    expect(barOf(container)).toBeNull()
+    // 关掉进度条不应影响自动关闭
+    tick(4, 300)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('duration<=0 时不显示进度条（没有计时器就没有倒计时）', () => {
+    // 即使显式要求显示，也不能凭空画一根不会走的进度条
+    const { container } = render(
+      <Toast tone="info" title="常驻" duration={0} showCountdown onClose={vi.fn()} />,
+    )
+    expect(barOf(container)).toBeNull()
+  })
+
+  it('四种状态各自带不同的进度条颜色类', () => {
+    const bars = (['success', 'warning', 'danger', 'info'] as const).map((tone) => {
+      const { container, unmount } = render(
+        <Toast tone={tone} title="标题" duration={3000} onClose={vi.fn()} />,
+      )
+      const cls = barOf(container)?.getAttribute('class') ?? ''
+      unmount()
+      return cls
+    })
+
+    /**
+     * 回归防线：进度条颜色必须是完整的字面量类名。
+     * 若改回运行时拼接（如 iconClassName.replace('text-','bg-')），
+     * Tailwind 不会生成这些类，进度条会拿到不存在的 class 而变成透明 ——
+     * 元素仍在、宽度也在动，只是肉眼看不见，极难发现。
+     */
+    expect(new Set(bars).size).toBe(4)
+    bars.forEach((cls) => {
+      expect(cls).toMatch(/\bbg-(success|warning|danger|info)\b/)
+    })
+  })
 })
