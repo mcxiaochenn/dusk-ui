@@ -500,15 +500,17 @@ for (const [name, url] of [
   await page.getByRole('button', { name: '切换统计卡片加载状态' }).click()
   await page.waitForTimeout(500)
   const rmSpinner = await page.evaluate(() => {
-    const el = document.querySelector('button[aria-busy="true"] span[aria-hidden]')
+    const el = document.querySelector('button[aria-busy="true"] [aria-hidden]')
     const btn = el?.closest('button')
     if (!el || !btn) return null
     const cs = getComputedStyle(el)
     const r = el.getBoundingClientRect()
+    // 指示器是 SVG 圆形：靠 dasharray 留出缺口，静止时仍能读作「加载中」
+    const strokeEl = el.tagName.toLowerCase() === 'svg' ? el.querySelector('circle') : el
+    const dash = strokeEl ? getComputedStyle(strokeEl).strokeDasharray : ''
     return {
       visible: r.width > 0 && r.height > 0 && cs.opacity !== '0',
-      // 有一边透明才看得出环形缺口，静止时仍能读作「加载中」
-      hasGap: cs.borderTopColor !== cs.borderRightColor,
+      hasGap: Boolean(dash) && dash !== 'none' && !/^0(px)?(,|$)/.test(dash),
       // 状态还要有非视觉通道
       conveyed: btn.getAttribute('aria-busy') === 'true' && (btn.textContent ?? '').includes('加载中'),
     }
@@ -665,6 +667,58 @@ for (const [name, url] of [
     `${onState.rightInset}px / ${offState.leftInset}px`,
   )
 
+  /* 方形盒子 + 大圆角 = 本意是正圆，必须退出连续曲率（squircle）。
+     squircle 有四重对称，用在正圆上是圆角方形；旋转时尤其割裂。
+     装饰性色块形状不承载语义，允许保持 squircle，故排除尺寸 > 100px 的。 */
+  const squircleSquares = await page.evaluate(() => {
+    const bad = []
+    for (const el of document.querySelectorAll('*')) {
+      const cs = getComputedStyle(el)
+      if (cs.cornerShape !== 'squircle') continue
+      const r = el.getBoundingClientRect()
+      if (r.width < 4 || r.width > 100) continue
+      if (Math.abs(r.width - r.height) > 0.5) continue
+      if (!(parseFloat(cs.borderTopLeftRadius) >= r.width / 2 - 1)) continue
+      bad.push(`<${el.tagName.toLowerCase()}> ${Math.round(r.width)}px`)
+    }
+    return [...new Set(bad)]
+  })
+  record(
+    `${name} · 方形正圆元素未被 squircle 影响`,
+    squircleSquares.length === 0,
+    squircleSquares.length ? squircleSquares.join('、') : '无',
+  )
+
+  /* 加载指示器必须是真圆：SVG circle 天然正圆，且带圆头端点 */
+  await page.locator('#stats').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: '切换统计卡片加载状态' }).click()
+  await page.waitForTimeout(400)
+  const indicator = await page.evaluate(() => {
+    const svg = document.querySelector('button[aria-busy="true"] svg')
+    const circle = svg?.querySelector('circle')
+    if (!svg || !circle) return null
+    const cs = getComputedStyle(circle)
+    return {
+      isCircleEl: circle.tagName.toLowerCase() === 'circle',
+      // cx === cy 且 r 存在 → 几何上是正圆，与 corner-shape 无关
+      centered: circle.getAttribute('cx') === circle.getAttribute('cy'),
+      r: circle.getAttribute('r'),
+      linecap: cs.strokeLinecap,
+      dash: cs.strokeDasharray,
+    }
+  })
+  record(
+    `${name} · 加载指示器是 SVG 正圆（不受连续曲率影响）`,
+    indicator?.isCircleEl === true && indicator.centered && Boolean(indicator.r),
+    JSON.stringify(indicator),
+  )
+  record(
+    `${name} · 指示器弧线用圆头端点`,
+    indicator?.linecap === 'round',
+    `${indicator?.linecap} / dash ${indicator?.dash}`,
+  )
+
   /* 加载指示器：必须真的在旋转。
      只断言 animation-name 不够 —— 关键帧缺失时名字仍在，只是不生效。
      因此采两次 transform 矩阵对比。 */
@@ -674,15 +728,15 @@ for (const [name, url] of [
   await page.waitForTimeout(350)
 
   const spinner = await page.evaluate(() => {
-    const el = document.querySelector('button[aria-busy="true"] span[aria-hidden]')
+    const el = document.querySelector('button[aria-busy="true"] [aria-hidden]')
     return el ? { name: getComputedStyle(el).animationName, dur: getComputedStyle(el).animationDuration } : null
   })
   record(`${name} · loading 态出现旋转指示器`, spinner !== null)
 
   if (spinner) {
-    const t1 = await page.evaluate(() => getComputedStyle(document.querySelector('button[aria-busy="true"] span[aria-hidden]')).transform)
+    const t1 = await page.evaluate(() => getComputedStyle(document.querySelector('button[aria-busy="true"] [aria-hidden]')).transform)
     await page.waitForTimeout(170)
-    const t2 = await page.evaluate(() => getComputedStyle(document.querySelector('button[aria-busy="true"] span[aria-hidden]')).transform)
+    const t2 = await page.evaluate(() => getComputedStyle(document.querySelector('button[aria-busy="true"] [aria-hidden]')).transform)
     record(
       `${name} · 旋转指示器确实在转（transform 随时间变化）`,
       t1 !== t2 && t1 !== 'none',
