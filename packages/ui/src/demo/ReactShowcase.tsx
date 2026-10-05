@@ -14,6 +14,8 @@ import {
   DEMO_STATS,
   DEMO_TABS,
   DEMO_TOASTS,
+  DEMO_TOAST_DURATION,
+  DEMO_COUNTDOWN_DEFAULT,
 } from './data'
 import {
   DialogIsland,
@@ -179,7 +181,11 @@ export function ReactShowcase() {
         >
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_1fr]">
             <div className="rounded-card border border-border bg-surface-1 p-6">
-              <ToastsIsland copy={DEMO_TOASTS as Record<ToastTone, DemoToastCopy>} />
+              <ToastsIsland
+                copy={DEMO_TOASTS as Record<ToastTone, DemoToastCopy>}
+                duration={DEMO_TOAST_DURATION}
+                countdownDefault={DEMO_COUNTDOWN_DEFAULT}
+              />
             </div>
 
             <div className="rounded-card border border-border bg-surface-1 p-6">

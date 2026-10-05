@@ -32,6 +32,7 @@ import {
   SegmentedTabPanel,
   SegmentedTabs,
   StatCard,
+  Switch,
   ToastViewport,
   type DemoDockItem,
   type DemoStat,
@@ -138,21 +139,51 @@ export function StatCardsIsland({
 type ToastItem = ToastData & { id: string }
 
 /**
- * 四种通知的触发按钮与通知容器。
- * 二者同岛：按钮写入的 toasts 状态由同一组件内的 Host 渲染。
+ * 四种通知的触发按钮、倒计时开关与通知容器。
+ *
+ * 三者同岛：开关与按钮写入的状态由同一组件内的 Host 渲染。
+ * 拆成不同岛会读不到彼此的状态（Islands 不共享 React Context）。
  */
-export function ToastsIsland({ copy }: { copy: Record<ToastTone, DemoToastCopy> }) {
+export function ToastsIsland({
+  copy,
+  duration,
+  countdownDefault = true,
+}: {
+  copy: Record<ToastTone, DemoToastCopy>
+  /**
+   * 自动关闭时长（毫秒）。可序列化，因此能从 .astro 传入。
+   * 不传时由 <Toast> 自身回退到 TOAST_DEFAULT_DURATION，
+   * 这里不重复写默认值，避免两处数字各自漂移。
+   */
+  duration?: number
+  /** 倒计时开关的初始状态 */
+  countdownDefault?: boolean
+}) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([])
+  /** 倒计时显示开关。统一作用于所有类型的通知。 */
+  const [countdown, setCountdown] = React.useState(countdownDefault)
   const seq = React.useRef(0)
 
-  const push = React.useCallback((tone: ToastTone) => {
-    const item = copy[tone]
-    seq.current += 1
-    setToasts((prev) => [
-      ...prev,
-      { id: `toast-${seq.current}`, tone, title: item.title, description: item.description, duration: 5000 },
-    ])
-  }, [copy])
+  const push = React.useCallback(
+    (tone: ToastTone) => {
+      const item = copy[tone]
+      seq.current += 1
+      setToasts((prev) => [
+        ...prev,
+        {
+          id: `toast-${seq.current}`,
+          tone,
+          title: item.title,
+          description: item.description,
+          // 外部传入的时长；为 undefined 时由组件默认值兜底
+          duration,
+          // 开关统一作用于四种状态
+          showCountdown: countdown,
+        },
+      ])
+    },
+    [copy, duration, countdown],
+  )
 
   const dismiss = React.useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
@@ -160,6 +191,14 @@ export function ToastsIsland({ copy }: { copy: Record<ToastTone, DemoToastCopy> 
 
   return (
     <div>
+      <Switch
+        checked={countdown}
+        onCheckedChange={setCountdown}
+        label="显示倒计时"
+        description="统一控制四种通知的进度条；关闭后通知仍按时自动关闭"
+        className="mb-4"
+      />
+
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" onClick={() => push('success')}>
           成功通知

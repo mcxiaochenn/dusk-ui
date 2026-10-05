@@ -21,6 +21,8 @@ import {
   DEMO_DOCK,
   DEMO_POST,
   DEMO_SPECS,
+  DEMO_TOAST_DURATION,
+  DEMO_COUNTDOWN_DEFAULT,
   DEMO_STATS,
   DEMO_TABS,
   DEMO_TOASTS,
@@ -177,7 +179,13 @@ import {
       </div>
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_1fr]">
         <div class="rounded-card border border-border bg-surface-1 p-6">
-          <ToastsIsland client:idle copy={DEMO_TOASTS} />
+          <!-- duration 与 countdownDefault 都是可序列化值，可从 Astro 传入 -->
+          <ToastsIsland
+            client:idle
+            copy={DEMO_TOASTS}
+            duration={DEMO_TOAST_DURATION}
+            countdownDefault={DEMO_COUNTDOWN_DEFAULT}
+          />
         </div>
         <div class="rounded-card border border-border bg-surface-1 p-6">
           <DialogIsland

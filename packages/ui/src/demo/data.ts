@@ -8,6 +8,8 @@
  * 只包含可序列化数据，可安全地作为 props 传入 Astro 的 React Islands。
  */
 
+import { TOAST_DEFAULT_DURATION } from '../components/Toast'
+
 /** 统计卡片演示数据 */
 export interface DemoStat {
   label: string
@@ -59,6 +61,26 @@ export const DEMO_TOASTS: Record<'success' | 'warning' | 'danger' | 'info', Demo
   danger: { title: '部署失败', description: '演示内容，不涉及真实环境。' },
   info: { title: '检查到新版本', description: '演示通知，用于验证进度条同步。' },
 }
+
+/**
+ * 通知自动关闭时长（毫秒）——「参数由外部传入」的示例。
+ *
+ * 来源链条：
+ *   data.ts 的这个常量
+ *     → 页面传给 <ToastsIsland duration={...}>
+ *     → 包装层写入每条通知数据
+ *     → <Toast duration={...}>
+ *
+ * 取值为组件导出的默认常量，保证「演示值」与「组件默认值」不会各写一份而漂移。
+ * 想改时长时，改这里即可同时影响两个展示工程；调用方传别的数字就会覆盖它。
+ */
+export const DEMO_TOAST_DURATION: number = TOAST_DEFAULT_DURATION
+
+/**
+ * 演示页倒计时开关的初始状态。
+ * 默认开启，与「不加开关时」的表现一致。
+ */
+export const DEMO_COUNTDOWN_DEFAULT = true
 
 /** 底部导航项。href 用锚点，跨区域导航不依赖 React 状态。 */
 export interface DemoDockItem {
