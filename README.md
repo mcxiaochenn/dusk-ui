@@ -201,7 +201,7 @@ dusk-ui/
 ├─ packages/
 │  └─ ui/               唯一的组件与样式来源
 │     └─ src/
-│        ├─ components/ 五个核心组件 + 必要基础控件
+│        ├─ components/ 五个核心组件 + 四个基础控件
 │        ├─ demo/       共用演示数据 + Astro Islands 包装层
 │        ├─ motion/     动效常量、cn()、SSR hook
 │        ├─ styles/     tokens.css + globals.css
@@ -235,11 +235,11 @@ dusk-ui/
 | --- | --- |
 | `StatCard` | 统计指标卡片，带等宽数字与同尺寸骨架 |
 | `FloatingDock` | 桌面端按鼠标距离连续放大的悬浮导航；触屏端固定 44px |
-| `Toast` | 四种状态通知，悬停/聚焦暂停倒计时 |
+| `Toast` | 四种状态通知，悬停/聚焦暂停倒计时；倒计时可开关，时长外部可配 |
 | `Dialog` | 基于 Radix 的模态弹窗，焦点管理与 Esc 全部交给 Radix |
 | `SegmentedTabs` | 胶囊选项卡，选中指示器为共享表面并平滑移动 |
 
-基础控件：`Button`、`Skeleton`、`ThemeToggle`。
+基础控件：`Button`、`Skeleton`、`Switch`、`ThemeToggle`。
 
 ---
 
@@ -248,7 +248,7 @@ dusk-ui/
 **已包含**
 
 - 设计令牌（浅色 / 深色）、五种表面材质与连续曲率渐进增强
-- 五个核心组件 + 三个基础控件
+- 五个核心组件 + 四个基础控件
 - **两套展示工程**（独立 React + Astro React Islands），共用同一份组件源码与样式
 - Astro 页面结构 + 6 个按需 hydrate 的 React Islands，无 `client:only`
 - SSR 兼容处理：首屏不入场动画，避免 hydration mismatch

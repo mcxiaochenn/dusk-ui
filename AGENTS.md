@@ -123,6 +123,24 @@ Astro 是主要使用场景，这些规则优先级最高：
 
 ---
 
+## 禁止运行时拼接 Tailwind 类名
+
+Tailwind 只静态扫描源码。**任何由 `.replace()`、模板字符串或字符串加法拼出的类名都不会被生成。**
+
+```tsx
+// ❌ 错误：bg-success / bg-warning / bg-info 永远不会生成
+className={iconClassName.replace('text-', 'bg-')}
+
+// ✅ 正确：完整字面量，Tailwind 能扫到
+const TONE = { success: { barClassName: 'bg-success' }, /* ... */ }
+```
+
+**症状极具欺骗性**：元素存在、动画正常、构建无报错，只是背景色退化为透明。历史事故正是如此——四条通知中三条的倒计时进度条不可见，长期未被发现。
+
+`npm run verify:docs` 已加静态检查拦截该模式；`Toast.test.tsx` 有断言保证四种状态的进度条带不同的 `bg-*` 字面量类。
+
+---
+
 ## 精准修改边界
 
 - 只改任务范围内的界面。**不顺手优化、不重构无关代码、不引入新风格。**

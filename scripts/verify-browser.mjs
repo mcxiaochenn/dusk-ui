@@ -494,6 +494,94 @@ for (const [name, url] of [
   await ctx.close()
 }
 
+/* ═══════════════════════════════════════════════════════
+   6. 通知倒计时：开关与四种状态的进度条
+   ═══════════════════════════════════════════════════════ */
+console.log('\n── 通知倒计时开关 ──')
+for (const [name, url] of [
+  ['React', REACT],
+  ['Astro', ASTRO],
+]) {
+  const { ctx, page, log } = await open(browser, url)
+  await page.locator('#feedback').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(600)
+
+  const sw = page.getByRole('switch', { name: '显示倒计时' })
+  record(`${name} · 倒计时开关存在且默认为开启`, (await sw.getAttribute('aria-checked')) === 'true')
+
+  const clearAll = async () => {
+    for (const btn of await page.locator('button[aria-label="关闭通知"]').all()) {
+      await btn.click().catch(() => {})
+    }
+    await page.waitForTimeout(320)
+  }
+  /** 读取当前通知的进度条状态 */
+  const readBar = () =>
+    page.evaluate(() => {
+      const t = document.querySelector('[role="alert"], [role="status"]')
+      if (!t) return { noToast: true }
+      const track = t.querySelector('.absolute.inset-x-0.bottom-0')
+      if (!track) return { hasBar: false, visible: false }
+      const bg = getComputedStyle(track.firstElementChild).backgroundColor
+      return { hasBar: true, visible: !/rgba?\(0, 0, 0, 0\)|transparent/.test(bg) }
+    })
+
+  /* 四种状态都应有可见进度条 ——
+     这正是曾经的缺陷：颜色类运行时拼接导致三条进度条透明 */
+  const tones = ['成功通知', '警告通知', '错误通知', '提示通知']
+  const invisible = []
+  for (const label of tones) {
+    await clearAll()
+    await page.getByRole('button', { name: label }).click()
+    await page.waitForTimeout(420)
+    const r = await readBar()
+    if (!r.hasBar || !r.visible) invisible.push(label)
+  }
+  record(
+    `${name} · 四种状态的倒计时进度条均可见`,
+    invisible.length === 0,
+    invisible.length ? `不可见：${invisible.join('、')}` : '4/4 可见',
+  )
+
+  /* 关闭开关后进度条消失 */
+  await clearAll()
+  await sw.click()
+  await page.waitForTimeout(280)
+  await page.getByRole('button', { name: '错误通知' }).click()
+  await page.waitForTimeout(420)
+  record(`${name} · 关闭开关后不显示进度条`, (await readBar()).hasBar === false)
+  await page.screenshot({ path: `${OUT}${name.toLowerCase()}-countdown-off.png` })
+
+  /* 但自动关闭仍然有效 —— 开关只控制显示，不改计时 */
+  const before = await page.locator('[role="alert"], [role="status"]').count()
+  await page.waitForFunction(() => document.querySelectorAll('[role="alert"], [role="status"]').length === 0, {
+    timeout: 8000,
+  })
+  record(`${name} · 关闭开关后通知仍按时自动关闭`, before > 0)
+
+  /* 恢复开关 */
+  await sw.click()
+  await page.waitForTimeout(280)
+  await page.getByRole('button', { name: '提示通知' }).click()
+  await page.waitForTimeout(420)
+  record(`${name} · 重新开启后进度条恢复`, (await readBar()).visible === true)
+  await page.screenshot({ path: `${OUT}${name.toLowerCase()}-countdown-on.png` })
+
+  /* 键盘可达 + 焦点环 */
+  await sw.focus()
+  record(
+    `${name} · 开关键盘可达且有焦点环`,
+    await page.evaluate(() => {
+      const el = document.activeElement
+      if (el?.getAttribute('role') !== 'switch') return false
+      return parseFloat(getComputedStyle(el).outlineWidth) > 0
+    }),
+  )
+
+  record(`${name} · 倒计时开关场景无控制台报错`, log.errors.length === 0, log.errors.slice(0, 2).join(' | '))
+  await ctx.close()
+}
+
 await browser.close()
 
 const failed = results.filter((r) => !r.ok)

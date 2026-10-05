@@ -366,6 +366,43 @@ for (const name of mentioned) {
   }
 }
 
+/* ── 18. Tailwind 类名不得运行时拼接 ──
+   组件源码会被 Tailwind 静态扫描，运行时拼出的类名不会被生成 ——
+   症状是「元素在、动画在、但样式全无」，构建不报错，极难发现。
+   曾因此导致三条通知的倒计时进度条透明（bg-* 未生成）。 */
+{
+  const dynamicClassPatterns = [
+    /\.replace\(\s*['"]text-['"]\s*,\s*['"]bg-['"]\s*\)/,
+    /`bg-\$\{/,
+    /`text-\$\{/,
+    /['"]bg-['"]\s*\+/,
+    /['"]text-['"]\s*\+/,
+  ]
+  const offenders = []
+  for (const [file, code] of sources) {
+    // 测试文件不进入产物，也不参与 Tailwind 扫描；其注释里会引用这个坏模式做说明
+    if (/\.test\.tsx?$/.test(file)) continue
+    if (!file.endsWith('.tsx') && !file.endsWith('.ts')) continue
+    for (const re of dynamicClassPatterns) {
+      if (re.test(code)) offenders.push(`${file.split('/').pop()}: ${re}`)
+    }
+  }
+  check('无 Tailwind 类名运行时拼接（否则样式会静默丢失）', offenders.length === 0, offenders.join(' | '))
+
+  // 四种语义色的进度条类必须是字面量
+  const toastSrc = sources.get(
+    [...sources.keys()].find((f) => f.endsWith('packages/ui/src/components/Toast.tsx')),
+  ) ?? ''
+  for (const tone of ['success', 'warning', 'danger', 'info']) {
+    check(`Toast 含字面量 bg-${tone}`, toastSrc.includes(`'bg-${tone}'`))
+  }
+  check('Toast 导出 TOAST_DEFAULT_DURATION', /export const TOAST_DEFAULT_DURATION/.test(toastSrc))
+  check('Toast 支持 showCountdown 参数', toastSrc.includes('showCountdown'))
+  check('ToastsIsland 不再写死时长', !/duration:\s*\d{3,}/.test(
+    sources.get([...sources.keys()].find((f) => f.endsWith('demo/islands.tsx'))) ?? '',
+  ))
+}
+
 console.log(`\n${failures.length === 0 ? '全部通过' : `失败 ${failures.length} 项`}`)
 if (failures.length) {
   failures.forEach((f) => console.log(`  - ${f}`))

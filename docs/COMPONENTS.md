@@ -130,6 +130,55 @@ import { ThemeToggle } from '@dusk-ui/ui'
 **可访问性**：`role="radiogroup"` + `role="radio"` + `aria-checked`，每个按钮有 `aria-label`。
 **边界**：只做两态切换，不做跟随系统选项。深色主题写在 `html.dark` 上，因此**其他岛无需共享 Context**，CSS 变量会自然响应。
 
+### Switch
+
+文件：`packages/ui/src/components/Switch.tsx`
+
+受控开关。用于「开 / 关」这类布尔设置。
+
+```tsx
+// 独立 React 工程
+import * as React from 'react'
+import { Switch } from '@dusk-ui/ui'
+
+function Demo() {
+  const [on, setOn] = React.useState(true)
+  return (
+    <Switch
+      checked={on}
+      onCheckedChange={setOn}
+      label="显示倒计时"
+      description="关闭后通知仍按时自动关闭"
+    />
+  )
+}
+```
+
+```astro
+<!-- Astro：开关需要点击，必须 hydrate。
+     checked 是受控值，状态要放在岛内维护，不能从 .astro 传入回调。 -->
+---
+import { Switch } from '@dusk-ui/ui'
+---
+
+<Switch client:idle checked={false} onCheckedChange={undefined} label="开关" />
+```
+
+> **Astro 注意**：`onCheckedChange` 是函数，**不能从 `.astro` 传入**。开关必须放在岛内部由 React 管理状态（本仓库的做法见 `ToastsIsland`），或在包装层里封装。上面第二个示例仅示意组件本身可用，实际请务必在岛内使用。
+
+| 参数 | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `checked` | `boolean` | 必填 | 受控状态 |
+| `onCheckedChange` | `(checked: boolean) => void` | 必填 | 状态变化回调 |
+| `label` | `string` | 必填 | 开关本身不显示文字，标签由外部提供，同时作为 `aria-label` |
+| `description` | `string` | — | 标签下方的说明文字 |
+| `disabled` | `boolean` | `false` | 禁用 |
+| `className` | `string` | — | 追加类名 |
+
+**依赖**：无额外运行时依赖（只用 `cn` 与令牌）。
+**可访问性**：用 `button[role="switch"]` + `aria-checked`，而非原生 checkbox —— 按钮天然支持空格与回车，也无需 `for`/`id` 关联。状态不只靠颜色：轨道位置（左/右）本身是位置信号。
+**边界**：只做受控组件，不维护内部状态，也不提供 indeterminate 半选态。
+
 ---
 
 ## StatCard
@@ -357,13 +406,15 @@ src/styles/globals.css
 ### 最小使用示例
 
 ```tsx
+// 独立 React 工程
 import { useState } from 'react'
-import { ToastViewport, type ToastData } from '@dusk-ui/ui'
+import { ToastViewport, TOAST_DEFAULT_DURATION, type ToastData } from '@dusk-ui/ui'
 
 type Item = ToastData & { id: string }
 
 export function Demo() {
   const [toasts, setToasts] = useState<Item[]>([])
+  const [showCountdown, setShowCountdown] = useState(true)
 
   const dismiss = (id: string) =>
     setToasts((prev) => prev.filter((t) => t.id !== id))
@@ -374,7 +425,14 @@ export function Demo() {
         onClick={() =>
           setToasts((p) => [
             ...p,
-            { id: String(Date.now()), tone: 'success', title: '已保存', duration: 5000 },
+            {
+              id: String(Date.now()),
+              tone: 'success',
+              title: '已保存',
+              // 显式传入时长；省略则用 TOAST_DEFAULT_DURATION
+              duration: TOAST_DEFAULT_DURATION,
+              showCountdown,
+            },
           ])
         }
       >
@@ -390,15 +448,27 @@ export function Demo() {
 ```astro
 <!-- Astro：触发按钮与 Host 必须在同一个岛内 -->
 ---
-import { DEMO_TOASTS, ToastsIsland } from '@dusk-ui/ui/demo'
+import {
+  DEMO_TOASTS,
+  DEMO_TOAST_DURATION,
+  DEMO_COUNTDOWN_DEFAULT,
+  ToastsIsland,
+} from '@dusk-ui/ui/demo'
 ---
 
-<ToastsIsland client:idle copy={DEMO_TOASTS} />
+<ToastsIsland
+  client:idle
+  copy={DEMO_TOASTS}
+  duration={DEMO_TOAST_DURATION}
+  countdownDefault={DEMO_COUNTDOWN_DEFAULT}
+/>
 ```
 
-> **为什么必须同岛**：`ToastsIsland` 内部同时渲染四个触发按钮和 `ToastViewport`，`toasts` 状态由这一个组件持有。若拆成「按钮岛 + Host 岛」，两者不共享 React Context，Host 读不到按钮写入的状态。
+> **为什么必须同岛**：`ToastsIsland` 内部同时渲染倒计时开关、四个触发按钮和 `ToastViewport`，`toasts` 与 `countdown` 状态由这一个组件持有。若拆成多个岛，它们不共享 React Context，Host 读不到按钮写入的状态。
 >
 > 用 `client:idle` 而非 `client:load`：通知不是首屏关键交互，等主线程空闲再 hydrate 即可。
+>
+> `duration` 与 `countdownDefault` 都是数字/布尔，**可序列化，因此能从 `.astro` 传入**。
 
 ### 参数
 
@@ -409,8 +479,56 @@ import { DEMO_TOASTS, ToastsIsland } from '@dusk-ui/ui/demo'
 | `tone` | `'success' \| 'warning' \| 'danger' \| 'info'` | 必填 | 状态 |
 | `title` | `string` | 必填 | 标题 |
 | `description` | `string` | — | 说明文字 |
-| `duration` | `number` | `5000` | 自动关闭毫秒数，`0` 表示不自动关闭 |
+| `duration` | `number` | `TOAST_DEFAULT_DURATION`（5000） | 自动关闭毫秒数，`<= 0` 表示不自动关闭 |
+| `showCountdown` | `boolean` | 跟随 `duration > 0` | 是否显示倒计时进度条，见下 |
 | `onClose` | `() => void` | 必填 | 关闭回调 |
+
+`ToastsIsland`（Astro / React 展示页用）
+
+| 参数 | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `copy` | `Record<ToastTone, DemoToastCopy>` | 必填 | 四种状态的文案 |
+| `duration` | `number` | 由 `<Toast>` 兜底 | 自动关闭时长，转交给每条通知 |
+| `countdownDefault` | `boolean` | `true` | 倒计时开关的初始状态 |
+
+### 倒计时：开关与时长
+
+**时长是外部传入的参数，不是写死的。**
+
+参数来源链条，只有一个默认值定义处：
+
+```
+Toast.tsx 导出 TOAST_DEFAULT_DURATION = 5000   ← 唯一的默认值定义
+   ↓ 不传时兜底
+demo/data.ts 的 DEMO_TOAST_DURATION           ← 演示值，直接取用上面的常量
+   ↓ 页面显式传入
+<ToastsIsland duration={DEMO_TOAST_DURATION}>  ← Astro 可序列化传入
+   ↓ 写入每条通知数据
+<Toast duration={...}>
+```
+
+- **默认值处理**：只有 `<Toast>` 有默认值（`TOAST_DEFAULT_DURATION`）。`ToastsIsland` **不重复写默认值**，`duration` 为 `undefined` 时直接透传，由组件兜底 —— 避免两处数字各自漂移。
+- **想改时长**：改 `demo/data.ts` 的 `DEMO_TOAST_DURATION` 会同时影响两个展示工程；调用方传别的数字即可覆盖。
+
+### `showCountdown` 的语义
+
+| `duration` | `showCountdown` | 进度条 | 自动关闭 |
+| --- | --- | --- | --- |
+| `> 0` | 不传 | 显示 | 是 |
+| `> 0` | `false` | **不显示** | **仍然自动关闭** |
+| `> 0` | `true` | 显示 | 是 |
+| `<= 0` | 不传 / `true` | **不显示** | 否 |
+| `<= 0` | `false` | 不显示 | 否 |
+
+要点：
+
+- 开关**只控制显示，不改计时**。关掉进度条后通知照常按时关闭。
+- `duration <= 0` 时即使传 `showCountdown: true` **也不会画进度条** —— 没有计时器却画一根不会走的进度条会误导用户。
+- 展示页的开关**统一作用于四种状态**，不区分类型。
+
+> **实现约束（回归防线）**：进度条颜色是 `TONE[tone].barClassName` 里的**完整字面量类名**（`bg-success` 等），不能由 `iconClassName` 拼接得出。
+>
+> 曾经这里写成 `iconClassName.replace('text-', 'bg-')`，Tailwind 静态扫描不到运行时拼出的类名，`bg-success` / `bg-warning` / `bg-info` 从未被生成，**三条进度条背景色退化为透明** —— 元素和宽度动画都在，只是肉眼看不见。`Toast.test.tsx` 已加断言，校验四种状态各自带不同的 `bg-*` 字面量类。
 
 `ToastViewport`
 
