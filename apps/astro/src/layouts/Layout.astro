@@ -1,0 +1,48 @@
+---
+/**
+ * Dusk UI — 演示页布局
+ * ─────────────────────────────────────────────────────────
+ * Astro 负责：页面骨架、标题、介绍、说明文字、静态区块。
+ * React 负责：需要交互的岛（Dock / Toast / Dialog / Tabs / 主题切换）。
+ *
+ * 样式从 @dusk-ui/ui 引入，与独立 React 工程是同一份。
+ */
+
+import '@dusk-ui/ui/styles.css'
+
+interface Props {
+  title: string
+  description: string
+}
+
+const { title, description } = Astro.props
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <script is:inline>
+      // 首屏绘制前应用主题，避免深浅主题闪烁。
+      // 与独立 React 工程使用同一份逻辑，保证两个工程行为一致。
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('dusk-ui-theme')
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          var dark = stored ? stored === 'dark' : prefersDark
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (e) {
+          /* localStorage 不可用时静默降级为浅色 */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

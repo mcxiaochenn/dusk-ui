@@ -1,0 +1,245 @@
+---
+/**
+ * Dusk UI — Astro 展示页
+ * ─────────────────────────────────────────────────────────
+ * 页面结构、标题、介绍、静态内容全部由 Astro 在构建时输出为静态 HTML。
+ * 只有需要交互的区域才使用 React Islands，且按需选择 client:* 指令。
+ *
+ * Islands 划分遵循「交互关系」而非「组件边界」：
+ * - Toast 触发按钮与 Toast Host 在同一个岛（ToastsIsland 内部）
+ * - Dialog 触发按钮与弹窗在同一个岛（DialogIsland 内部）
+ * - Tabs 与其面板在同一个岛（SegmentedTabsIsland 内部）
+ * - Dock 交互独立，自成一个岛
+ *
+ * 不同岛之间不共享 React Context。跨区域导航用原生锚点。
+ */
+
+import Layout from '../layouts/Layout.astro'
+import { ThemeToggle } from '@dusk-ui/ui'
+import {
+  DEMO_DIALOG_PARAGRAPHS,
+  DEMO_DOCK,
+  DEMO_POST,
+  DEMO_SPECS,
+  DEMO_STATS,
+  DEMO_TABS,
+  DEMO_TOASTS,
+  DialogIsland,
+  FloatingDockIsland,
+  SegmentedTabsIsland,
+  StatCardsIsland,
+  ToastsIsland,
+} from '@dusk-ui/ui/demo'
+---
+
+<Layout
+  title="Dusk UI — Astro 展示工程"
+  description="Dusk UI Astro 展示工程：Astro 页面结构 + 按需交互的 React Islands。"
+>
+  {/* 背景色块：静态、低对比，仅用于观察玻璃透出效果 */}
+  <div
+    aria-hidden
+    class="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+  >
+    <div
+      class="absolute -top-32 -left-32 size-[26rem] rounded-pill bg-accent-subtle opacity-60"
+    >
+    </div>
+    <div
+      class="absolute top-1/3 -right-40 size-[24rem] rounded-pill bg-info-subtle opacity-50"
+    >
+    </div>
+  </div>
+
+  <header
+    class="sticky top-0 z-30 border-b border-border-subtle bg-[var(--glass-bg-strong)] backdrop-blur-[var(--glass-blur)]"
+  >
+    <div
+      class="mx-auto flex max-w-[var(--page-max-width)] items-center justify-between gap-4 px-[var(--gutter)] py-3"
+    >
+      <div class="flex items-center gap-2.5">
+        <span
+          class="grid size-8 place-items-center rounded-control bg-accent text-accent-foreground"
+        >
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"></path>
+          </svg>
+        </span>
+        <span class="text-md font-semibold">Dusk UI</span>
+        <span
+          class="rounded-pill border border-border bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted"
+        >
+          Astro + React Islands
+        </span>
+      </div>
+      {/* 主题切换需要读写 localStorage，必须在客户端 */}
+      <ThemeToggle client:load />
+    </div>
+  </header>
+
+  <main
+    class="mx-auto max-w-[var(--page-max-width)] space-y-16 px-[var(--gutter)] pt-10 pb-[calc(var(--dock-height)+var(--space-6))]"
+  >
+    <!-- ── 概览：纯静态，Astro 直接输出，无需 hydration ── -->
+    <section id="overview" class="scroll-mt-20">
+      <h1 class="text-2xl">Dusk UI</h1>
+      <p class="mt-3 max-w-prose text-md text-foreground-secondary">
+        一套轻量界面设计规范与组件集合。本页由 Astro 输出页面结构，
+        仅交互区域使用 React Islands——组件源码与独立 React
+        工程完全共用，不存在第二份实现。
+      </p>
+      <div class="mt-5 flex flex-wrap items-center gap-2">
+        {
+          DEMO_SPECS.map((spec) => (
+            <span class="inline-flex items-center gap-1 rounded-control border border-border bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted [font-variant-numeric:tabular-nums]">
+              {spec}
+            </span>
+          ))
+        }
+      </div>
+      <div class="mt-6 flex flex-wrap gap-2">
+        <a class="inline-flex h-10 items-center rounded-control bg-accent px-4 text-base font-medium text-accent-foreground transition-colors hover:bg-accent-hover" href="#stats">
+          查看统计卡片
+        </a>
+        <a class="inline-flex h-10 items-center rounded-control border border-border bg-surface-2 px-4 text-base font-medium transition-colors hover:bg-surface-3" href="#feedback">
+          前往通知与弹窗
+        </a>
+      </div>
+    </section>
+
+    <!-- ── 统计卡片：需要加载态切换，client:visible按需 hydrate ── -->
+    <section id="stats" class="scroll-mt-8">
+      <div class="mb-5">
+        <h2 class="text-xl">统计卡片</h2>
+        <p class="mt-1.5 max-w-prose text-sm text-foreground-secondary">
+          工具型界面的密度基准。加载态与真实内容保持同尺寸，切换时不跳动。
+        </p>
+      </div>
+      <StatCardsIsland client:visible stats={DEMO_STATS} specs={[]} />
+    </section>
+
+    <!-- ── 内容与选项卡：左侧纯静态，右侧 Tabs 是岛 ── -->
+    <section id="content" class="scroll-mt-8">
+      <div class="mb-5">
+        <h2 class="text-xl">内容与选项卡</h2>
+        <p class="mt-1.5 max-w-prose text-sm text-foreground-secondary">
+          博客内容场景与工具界面共用同一套令牌。左侧卡片为 Astro
+          静态输出，未附加任何 client:* 指令。
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <article class="rounded-card border border-border bg-surface-1 p-6">
+          <div class="flex items-center gap-2 text-xs text-foreground-muted">
+            <span class="rounded-pill bg-accent-subtle px-2 py-0.5 text-accent">
+              {DEMO_POST.category}
+            </span>
+            <span>{DEMO_POST.date}</span>
+            <span aria-hidden="true">·</span>
+            <span>{DEMO_POST.readTime}</span>
+          </div>
+          <h3 class="mt-3 text-lg">{DEMO_POST.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-foreground-secondary">
+            {DEMO_POST.excerpt}
+          </p>
+          <div class="mt-5 flex items-center gap-2 border-t border-border-subtle pt-4">
+            <button
+              type="button"
+              class="inline-flex h-9 items-center rounded-control px-3 text-sm font-medium text-foreground-secondary transition-colors hover:bg-accent-subtle hover:text-foreground"
+            >
+              阅读全文
+            </button>
+            <span class="text-xs text-foreground-muted">演示内容</span>
+          </div>
+        </article>
+
+        <div class="rounded-card border border-border bg-surface-1 p-6">
+          <SegmentedTabsIsland client:visible tabs={DEMO_TABS} />
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 通知与弹窗：两个独立岛，各自管理自己的状态 ── -->
+    <section id="feedback" class="scroll-mt-8">
+      <div class="mb-5">
+        <h2 class="text-xl">通知与弹窗</h2>
+        <p class="mt-1.5 max-w-prose text-sm text-foreground-secondary">
+          四种通知状态各自带图标，不依赖颜色单独传达信息。弹窗的焦点管理与 Esc
+          关闭由 Radix 处理。
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <div class="rounded-card border border-border bg-surface-1 p-6">
+          <ToastsIsland client:idle copy={DEMO_TOASTS} />
+        </div>
+        <div class="rounded-card border border-border bg-surface-1 p-6">
+          <DialogIsland
+            client:idle
+            paragraphs={DEMO_DIALOG_PARAGRAPHS}
+            confirmNote="确认后此处显示操作已确认（演示状态，未提交任何数据）。"
+          />
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        {
+          ['通知圆角 16px', '弹窗圆角 24px', '悬停暂停倒计时', 'aria-live 已设置'].map(
+            (spec) => (
+              <span class="inline-flex items-center gap-1 rounded-control border border-border bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted [font-variant-numeric:tabular-nums]">
+                {spec}
+              </span>
+            ),
+          )
+        }
+      </div>
+    </section>
+
+    <!-- ── 材质样本：纯静态，由 Astro 输出 ── -->
+    <section id="materials" class="scroll-mt-8">
+      <div class="mb-5">
+        <h2 class="text-xl">材质样本</h2>
+        <p class="mt-1.5 max-w-prose text-sm text-foreground-secondary">
+          三种表面角色：内容表面用实色，玻璃表面只用于悬浮控件，遮罩负责隔离背景。
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <p class="text-sm font-medium">内容表面</p>
+          <p class="mt-2 text-sm text-foreground-secondary">
+            实色背景，靠明度与边框分层。用于正文、表单与卡片。
+          </p>
+        </div>
+        <div class="glass rounded-card p-5">
+          <p class="text-sm font-medium">玻璃表面</p>
+          <p class="mt-2 text-sm text-foreground-secondary">
+            半透明 + 背景模糊 + 内侧高光。用于 Dock、通知等悬浮控件。
+          </p>
+        </div>
+        <div class="rounded-card border border-border bg-surface-3 p-5">
+          <p class="text-sm font-medium">分隔面</p>
+          <p class="mt-2 text-sm text-foreground-secondary">
+            更强的明度对比。用于需要与内容表面明确区分的区域。
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer
+    class="mx-auto max-w-[var(--page-max-width)] px-[var(--gutter)] pb-[calc(var(--dock-height)+var(--space-6))]"
+  >
+    <p class="border-t border-border-subtle pt-6 text-xs text-foreground-muted">
+      Dusk UI · Astro 展示工程 · 页面结构由 Astro 输出，交互由 React Islands 提供 · 组件与样式来自
+      @dusk-ui/ui
+    </p>
+  </footer>
+
+  <!-- Dock 需要立即可用，因此用 client:load -->
+  <FloatingDockIsland client:load items={DEMO_DOCK} />
+</Layout>
