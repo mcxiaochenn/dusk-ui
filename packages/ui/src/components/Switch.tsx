@@ -49,8 +49,15 @@ export function Switch({
         <span
           aria-hidden
           className={cn(
-            'absolute top-0.5 size-3.5 rounded-pill transition-transform duration-[150ms] ease-[var(--ease-standard)]',
-            checked ? 'translate-x-[1.125rem] bg-accent-foreground' : 'translate-x-0.5 bg-surface-1',
+            /**
+             * 必须显式写 left：绝对定位元素若 left 为 auto，会取「静态位置」，
+             * 而 button 的浏览器默认样式是 text-align: center，
+             * 静态位置因此被居中（实测解析为 17px 而非 0），
+             * 再叠加 translate-x 就会把滑块推出轨道外。
+             */
+            'absolute top-0.5 left-0.5 size-3.5 rounded-pill transition-transform duration-[150ms] ease-[var(--ease-standard)]',
+            // 左右两侧各留 3px：轨道 36px - 边框 2px - 滑块 14px - 左偏移 2px = 16px 位移量
+            checked ? 'translate-x-4 bg-accent-foreground' : 'translate-x-0 bg-surface-1',
           )}
         />
       </button>
