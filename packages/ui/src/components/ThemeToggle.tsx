@@ -73,7 +73,7 @@ export function ThemeToggle({ className }: { className?: string }) {
               applyTheme(option.value)
             }}
             className={cn(
-              'grid size-9 place-items-center rounded-pill transition-colors duration-[150ms] ease-[var(--ease-standard)]',
+              'grid size-9 place-items-center rounded-pill corner-round transition-colors duration-[150ms] ease-[var(--ease-standard)]',
               selected
                 ? 'bg-surface-1 text-foreground shadow-xs'
                 : 'text-foreground-muted hover:text-foreground',

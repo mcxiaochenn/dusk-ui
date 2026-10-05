@@ -68,11 +68,38 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <span
+        /**
+         * 等待指示器用 SVG 绘制，而不是「border + border-top-transparent」的矩形画法。
+         *
+         * 原因：全局连续曲率（corner-shape: squircle）会作用到所有元素，
+         * 方形盒子加大圆角会被画成圆角方形而非正圆。圆角方形有四重对称，
+         * 旋转时看起来像「一个方块在转」，观感割裂。SVG 的 <circle> 恒为正圆，
+         * 不受该规则影响。
+         *
+         * 另外圆头端点（stroke-linecap）让弧的两端是圆角，
+         * 比边框画法被 45° 斜切的硬边更连贯。
+         *
+         * r=6 → 周长约 37.7；dash 26 + gap 12（略大于周长，
+         * 因此只出现一段弧），圆头端点再各补 1px，视觉上约四分之三圈。
+         */
+        <svg
           aria-hidden
-          className="size-3.5 shrink-0 rounded-pill border-2 border-current border-t-transparent"
+          focusable="false"
+          viewBox="0 0 14 14"
+          fill="none"
+          className="size-3.5 shrink-0"
           style={{ animation: 'dusk-spin 700ms linear infinite' }}
-        />
+        >
+          <circle
+            cx="7"
+            cy="7"
+            r="6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="26 12"
+          />
+        </svg>
       ) : null}
       {children}
     </motion.button>
