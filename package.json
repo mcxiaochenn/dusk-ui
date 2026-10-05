@@ -1,0 +1,45 @@
+{
+  "name": "dusk-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Dusk UI — 轻量界面设计规范与组件集合，供开发者与 AI 编程助手复用",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace apps/react",
+    "dev:react": "npm run dev --workspace apps/react",
+    "dev:astro": "npm run dev --workspace apps/astro",
+    "build": "npm run build --workspace apps/react && npm run build --workspace apps/astro",
+    "build:react": "npm run build --workspace apps/react",
+    "build:astro": "npm run build --workspace apps/astro",
+    "typecheck": "npm run typecheck --workspace apps/react && npm run typecheck --workspace apps/astro",
+    "typecheck:react": "npm run typecheck --workspace apps/react",
+    "typecheck:astro": "npm run typecheck --workspace apps/astro",
+    "preview:react": "npm run preview --workspace apps/react",
+    "preview:astro": "npm run preview --workspace apps/astro",
+    "test": "vitest run",
+    "verify:docs": "node scripts/verify-docs.mjs",
+    "verify:browser": "node scripts/verify-browser.mjs"
+  },
+  "devDependencies": {
+    "@esbuild/win32-x64": "^0.28.2",
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.0",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "jsdom": "26.1.0",
+    "playwright-core": "1.63.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "5.0.3"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
