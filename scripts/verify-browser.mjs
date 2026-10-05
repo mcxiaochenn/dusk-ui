@@ -489,6 +489,36 @@ for (const [name, url] of [
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.waitForTimeout(600)
   record(`${name} · 减弱动画下 Dock 不放大`, Math.abs((await dockBtn.boundingBox()).width - box.width) < 2)
+
+  /* 上面打开的弹窗还没关，先收起，否则它会挡住后续要点的按钮 */
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(400)
+
+  /* 减弱动画下旋转会被全局规则停掉，但指示器本身必须仍可见、仍能表达「加载中」 */
+  await page.locator('#stats').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: '切换统计卡片加载状态' }).click()
+  await page.waitForTimeout(500)
+  const rmSpinner = await page.evaluate(() => {
+    const el = document.querySelector('button[aria-busy="true"] span[aria-hidden]')
+    const btn = el?.closest('button')
+    if (!el || !btn) return null
+    const cs = getComputedStyle(el)
+    const r = el.getBoundingClientRect()
+    return {
+      visible: r.width > 0 && r.height > 0 && cs.opacity !== '0',
+      // 有一边透明才看得出环形缺口，静止时仍能读作「加载中」
+      hasGap: cs.borderTopColor !== cs.borderRightColor,
+      // 状态还要有非视觉通道
+      conveyed: btn.getAttribute('aria-busy') === 'true' && (btn.textContent ?? '').includes('加载中'),
+    }
+  })
+  record(
+    `${name} · 减弱动画下加载指示器仍可见且有非视觉通道`,
+    rmSpinner?.visible === true && rmSpinner.hasGap && rmSpinner.conveyed,
+    JSON.stringify(rmSpinner),
+  )
+
   record(`${name} · 减弱动画场景无报错`, log.errors.length === 0, log.errors.slice(0, 2).join(' | '))
   await page.screenshot({ path: `${OUT}${name.toLowerCase()}-reduced-motion.png` })
   await ctx.close()
@@ -579,6 +609,105 @@ for (const [name, url] of [
   )
 
   record(`${name} · 倒计时开关场景无控制台报错`, log.errors.length === 0, log.errors.slice(0, 2).join(' | '))
+  await ctx.close()
+}
+
+/* ═══════════════════════════════════════════════════════
+   7. 开关滑块几何 + 加载指示器旋转
+   ═══════════════════════════════════════════════════════ */
+console.log('\n── 开关几何与加载指示器 ──')
+for (const [name, url] of [
+  ['React', REACT],
+  ['Astro', ASTRO],
+]) {
+  const { ctx, page, log } = await open(browser, url)
+
+  /* 开关滑块：必须留在轨道内，且两个状态的近侧内边距一致。
+     曾经的缺陷：绝对定位元素缺 left，button 默认 text-align:center
+     使静态位置被居中（实测 17px），叠加 translate 后滑块被推出轨道外。 */
+  await page.locator('#feedback').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(500)
+  const sw = page.getByRole('switch', { name: '显示倒计时' })
+  const readThumb = () =>
+    page.evaluate(() => {
+      const s = document.querySelector('[role="switch"]')
+      const t = s.firstElementChild
+      const tr = s.getBoundingClientRect()
+      const hr = t.getBoundingClientRect()
+      return {
+        checked: s.getAttribute('aria-checked') === 'true',
+        leftInset: +(hr.left - tr.left).toFixed(1),
+        rightInset: +(tr.right - hr.right).toFixed(1),
+        inside: hr.left >= tr.left - 0.5 && hr.right <= tr.right + 0.5,
+      }
+    })
+
+  const onState = await readThumb()
+  await sw.click()
+  await page.waitForTimeout(400)
+  const offState = await readThumb()
+  await sw.click()
+  await page.waitForTimeout(400)
+
+  record(
+    `${name} · 滑块始终留在轨道内`,
+    onState.inside && offState.inside,
+    `开启 inside=${onState.inside} 关闭 inside=${offState.inside}`,
+  )
+  record(
+    `${name} · 滑块两态位置正确（开启靠右、关闭靠左）`,
+    onState.checked !== offState.checked && onState.leftInset > onState.rightInset && offState.leftInset < offState.rightInset,
+    `开启 左${onState.leftInset}/右${onState.rightInset}，关闭 左${offState.leftInset}/右${offState.rightInset}`,
+  )
+  record(
+    `${name} · 滑块两侧内边距对称`,
+    onState.rightInset === offState.leftInset && onState.rightInset > 0,
+    `${onState.rightInset}px / ${offState.leftInset}px`,
+  )
+
+  /* 加载指示器：必须真的在旋转。
+     只断言 animation-name 不够 —— 关键帧缺失时名字仍在，只是不生效。
+     因此采两次 transform 矩阵对比。 */
+  await page.locator('#stats').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: '切换统计卡片加载状态' }).click()
+  await page.waitForTimeout(350)
+
+  const spinner = await page.evaluate(() => {
+    const el = document.querySelector('button[aria-busy="true"] span[aria-hidden]')
+    return el ? { name: getComputedStyle(el).animationName, dur: getComputedStyle(el).animationDuration } : null
+  })
+  record(`${name} · loading 态出现旋转指示器`, spinner !== null)
+
+  if (spinner) {
+    const t1 = await page.evaluate(() => getComputedStyle(document.querySelector('button[aria-busy="true"] span[aria-hidden]')).transform)
+    await page.waitForTimeout(170)
+    const t2 = await page.evaluate(() => getComputedStyle(document.querySelector('button[aria-busy="true"] span[aria-hidden]')).transform)
+    record(
+      `${name} · 旋转指示器确实在转（transform 随时间变化）`,
+      t1 !== t2 && t1 !== 'none',
+      `${spinner.name} ${spinner.dur}：${t1} → ${t2}`,
+    )
+
+    /* 关键帧必须真实存在于样式表 —— 名字对但没有 @keyframes 是关键陷阱 */
+    const hasKeyframes = await page.evaluate(() => {
+      for (const sheet of document.styleSheets) {
+        let rules
+        try {
+          rules = sheet.cssRules
+        } catch {
+          continue
+        }
+        for (const r of rules) {
+          if (r.type === CSSRule.KEYFRAMES_RULE && r.name === 'dusk-spin') return true
+        }
+      }
+      return false
+    })
+    record(`${name} · @keyframes dusk-spin 已定义`, hasKeyframes)
+  }
+
+  record(`${name} · 开关与加载态场景无控制台报错`, log.errors.length === 0, log.errors.slice(0, 2).join(' | '))
   await ctx.close()
 }
 

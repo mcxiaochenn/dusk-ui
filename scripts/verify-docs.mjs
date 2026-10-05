@@ -403,6 +403,67 @@ for (const name of mentioned) {
   ))
 }
 
+/* ── 19. 引用的 CSS 动画名必须有对应 @keyframes ──
+   引用不存在的动画名不会报错也不会生效，表现为「元素静止不动」，
+   与缺类名一样属于静默失效。 */
+{
+  const cssAll = [...sources.entries()]
+    .filter(([f]) => f.endsWith('.css'))
+    .map(([, c]) => c)
+    .join('\n')
+
+  const definedKeyframes = new Set(
+    [...cssAll.matchAll(/@keyframes\s+([A-Za-z0-9_-]+)/g)].map((m) => m[1]),
+  )
+  check('已定义至少一个 @keyframes', definedKeyframes.size > 0, [...definedKeyframes].join(', '))
+
+  // 收集源码中 animation / animation-name 引用的动画名
+  const referenced = new Set()
+  for (const [file, code] of sources) {
+    if (/\.test\.tsx?$/.test(file)) continue
+    if (!/\.(tsx?|css)$/.test(file)) continue
+    for (const m of code.matchAll(/animation(?:-name)?\s*:\s*['"`]?([A-Za-z][A-Za-z0-9_-]*)/g)) {
+      const n = m[1]
+      // 排除 CSS 关键字与简写里可能误匹配的值
+      if (['none', 'inherit', 'initial', 'unset', 'revert'].includes(n)) continue
+      referenced.add(n)
+    }
+  }
+  for (const n of referenced) {
+    check(`动画 ${n} 有对应 @keyframes`, definedKeyframes.has(n))
+  }
+}
+
+/* ── 20. 绝对定位元素必须有显式偏移 ──
+   absolute 元素若缺 left/right，会取「静态位置」；button 默认
+   text-align:center 会把静态位置居中，再叠加 translate 就推出容器。
+   Switch 滑块曾因此整个跑到轨道外。 */
+{
+  const offenders = []
+  for (const [file, code] of sources) {
+    if (!file.endsWith('.tsx') || /\.test\.tsx$/.test(file)) continue
+    /**
+     * 逐个 className 检查。cn(...) 的整个参数体作为一段处理，
+     * 因此「基础类写 absolute、另一处参数写 left-0」这种分层写法不会被误报。
+     */
+    for (const m of code.matchAll(/className=(?:"([^"]*)"|\{cn\(([\s\S]*?)\)\})/g)) {
+      const raw = (m[1] ?? m[2] ?? '').replace(/\s+/g, ' ')
+      if (!/\babsolute\b/.test(raw)) continue
+      // 任一方向的显式偏移都算通过：inset / inset-x / inset-y / left-* / right-*
+      const hasInset = /\b(inset|inset-x|inset-y|left-|right-)\S*/.test(raw)
+      if (!hasInset) {
+        const snippet = raw.length > 60 ? `${raw.slice(0, 60)}…` : raw
+        offenders.push(`${file.split('/').pop()}: ${snippet}`)
+      }
+    }
+  }
+  check(
+    'absolute 元素带显式偏移（避免静态位置被居中）',
+    offenders.length === 0,
+    offenders.join(' | '),
+  )
+}
+
 console.log(`\n${failures.length === 0 ? '全部通过' : `失败 ${failures.length} 项`}`)
 if (failures.length) {
   failures.forEach((f) => console.log(`  - ${f}`))

@@ -141,6 +141,55 @@ const TONE = { success: { barClassName: 'bg-success' }, /* ... */ }
 
 ---
 
+## 三类「静默失效」——构建通过不代表样式与动画生效
+
+以下问题**全部不会报错**，只表现为「看起来没生效」。改样式或动画后必须实测，不能只看构建结果。
+
+### 1. 类名运行时拼接
+
+见上一节。
+
+### 2. 引用未定义的 `@keyframes`
+
+```tsx
+// ❌ dusk-spin 若未在 CSS 中定义，既报不了错也不会动
+style={{ animation: 'dusk-spin 700ms linear infinite' }}
+```
+
+关键帧必须真实存在于 `globals.css`。判断方式不是看 `animation-name`（名字会照常回显），而是：
+- 在样式表里找 `CSSRule.KEYFRAMES_RULE` 且名称匹配；
+- 或者采样两次 `getComputedStyle(el).transform`，看是否随时间变化。
+
+历史事故：`dusk-spin` 从未定义，加载圈圈一直静止不动。
+
+### 3. 绝对定位元素缺显式偏移
+
+`absolute` 元素若省略 `left`/`right`，会取「静态位置」。`button` 的浏览器默认样式是 `text-align: center`，静态位置会被**居中**，再叠加 `translate-x` 就会把元素推出容器。
+
+```tsx
+// ❌ left 为 auto → 静态位置被居中（实测 17px），滑块被推出轨道
+'absolute top-0.5 size-3.5 transition-transform'
+
+// ✅ 显式给 left
+'absolute top-0.5 left-0.5 size-3.5 transition-transform'
+```
+
+历史事故：Switch 开启时滑块完全不可见。
+
+### 排查套路
+
+这三类的共同点是「DOM 与逻辑都正常，只有渲染结果不对」。定位时**不要只读代码**，直接量计算样式：
+
+```js
+getComputedStyle(el).backgroundColor   // 是否透明
+getComputedStyle(el).translate         // Tailwind v4 用 translate 属性，不是 transform
+el.getBoundingClientRect()             // 是否跑出容器
+```
+
+`npm run verify:docs` 已对这三类都加了静态检查（含正则自检，确保能真的抓到旧写法）。
+
+---
+
 ## 精准修改边界
 
 - 只改任务范围内的界面。**不顺手优化、不重构无关代码、不引入新风格。**
