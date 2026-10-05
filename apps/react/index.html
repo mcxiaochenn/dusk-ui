@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Dusk UI — 独立 React 展示工程</title>
+    <meta name="description" content="Dusk UI 独立 React 展示工程：组件与样式来自 @dusk-ui/ui。" />
+    <script>
+      // 首屏绘制前应用主题，避免深浅主题闪烁。
+      // 读取顺序：localStorage → 系统偏好。
+      // Astro 版使用同一份脚本，保证两个工程行为一致。
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('dusk-ui-theme')
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          var dark = stored ? stored === 'dark' : prefersDark
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (e) {
+          /* localStorage 不可用时静默降级为浅色 */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
