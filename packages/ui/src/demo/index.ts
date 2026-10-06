@@ -56,6 +56,7 @@ export {
   getPostsByTag,
   getSortedPosts,
   getTagsWithCount,
+  hasUpdate,
 } from './blog/data'
 export type {
   BlogArchiveYear,

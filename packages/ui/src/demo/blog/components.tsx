@@ -17,6 +17,7 @@ import {
   CalendarDays,
   Clock,
   Clock3,
+  History,
 } from 'lucide-react'
 import { cn } from '../../motion/utils'
 import {
@@ -137,18 +138,25 @@ export function TagPill({
   )
 }
 
-/** 日期 / 分类 / 阅读时长行。 */
+/** 日期 / 更新 / 分类 / 阅读时长行。 */
 export function PostMeta({
   date,
+  updated,
   category,
   readingTime,
   categoryHref,
 }: {
   date: string
+  /** 更新时间。存在且晚于 date 时才显示 */
+  updated?: string
   category?: string
   readingTime?: string
   categoryHref?: string
 }) {
+  // 收紧到 string，让下面的 <time> 不需要额外判空。
+  // 「发布当天就算更新过」是脏数据，这里一并按未更新处理。
+  const updatedAt = updated !== undefined && updated > date ? updated : undefined
+
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground-muted">
       <span className="inline-flex items-center gap-1">
@@ -156,6 +164,12 @@ export function PostMeta({
         <time dateTime={date}>{formatDate(date)}</time>
       </span>
       {category ? <CategoryPill slug={category} href={categoryHref} /> : null}
+      {updatedAt ? (
+        <span className="inline-flex items-center gap-1">
+          <History className="size-3.5" aria-hidden />
+          <time dateTime={updatedAt}>更新于 {formatDate(updatedAt)}</time>
+        </span>
+      ) : null}
       {readingTime ? (
         <span className="inline-flex items-center gap-1">
           <Clock className="size-3.5" aria-hidden />

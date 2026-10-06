@@ -131,6 +131,13 @@ export interface BlogPost {
   cover: BlogCoverId
   /** ISO 日期字符串 */
   date: string
+  /**
+   * 最后更新时间（可选）。
+   *
+   * 语义见 hasUpdate：只有**晚于** date 才算真的更新过。
+   * 不填表示发布之后再没改动过，界面上不显示更新时间。
+   */
+  updated?: string
   category: string
   tags: string[]
   readingTime: string
@@ -149,6 +156,7 @@ export const BLOG_POSTS: BlogPost[] = [
       '工具界面要紧凑，文章页面要疏朗。密度不同不该导致视觉割裂，关键在于哪些令牌跟着密度走、哪些不跟着走。',
     cover: 'dawn',
     date: '2026-09-28',
+    updated: '2026-10-02',
     category: 'design',
     tags: ['design-system', 'tailwind'],
     readingTime: '7 分钟',
@@ -193,6 +201,7 @@ export const BLOG_POSTS: BlogPost[] = [
       '把 UI 组件按「看起来是一块」切岛会踩坑：触发按钮和它要控制的内容必须在同一个岛里，否则状态各管各的。',
     cover: 'iris',
     date: '2026-09-15',
+    updated: '2026-09-21',
     category: 'frontend',
     tags: ['astro', 'typescript'],
     readingTime: '6 分钟',
@@ -269,6 +278,7 @@ export const BLOG_POSTS: BlogPost[] = [
       '不是所有东西都值得容器化。哪些服务该上 Docker，哪些直接装在宿主上，判断标准其实只有两条。',
     cover: 'mint',
     date: '2026-08-12',
+    updated: '2026-08-24',
     category: 'devops',
     tags: ['selfhost'],
     readingTime: '8 分钟',
@@ -304,6 +314,7 @@ export const BLOG_POSTS: BlogPost[] = [
       '精密测量对新手的门槛不在设备，在流程。测头不校、坐标系不定，后面所有读数都是空的。',
     cover: 'slate',
     date: '2026-07-26',
+    updated: '2026-09-03',
     category: 'hardware',
     tags: ['measurement', 'notes'],
     readingTime: '6 分钟',
@@ -374,6 +385,7 @@ export const BLOG_POSTS: BlogPost[] = [
       '把正文宽度压到 70 个字符左右，比任何字体选择都更能提升长文的可读性。',
     cover: 'dusk',
     date: '2026-07-02',
+    updated: '2026-07-11',
     category: 'design',
     tags: ['design-system', 'notes'],
     readingTime: '4 分钟',
@@ -404,6 +416,7 @@ export const BLOG_POSTS: BlogPost[] = [
       '组件源码只有一份听起来很美好，实际要做到，得先解决样式扫描、类型检查与文档一致性的三处摩擦。',
     cover: 'mint',
     date: '2026-06-18',
+    updated: '2026-09-08',
     category: 'frontend',
     tags: ['typescript', 'astro', 'tailwind'],
     readingTime: '7 分钟',
@@ -452,6 +465,17 @@ export function getFeaturedPost(): BlogPost | undefined {
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
   return BLOG_POSTS.find((post) => post.slug === slug)
+}
+
+/**
+ * 是否「更新过」。
+ *
+ * 只有 updated 存在**且晚于发布日期**才算 —— 'YYYY-MM-DD' 的字典序与时间序一致，
+ * 直接比字符串即可，不必 new Date()。同时覆盖了一种常见脏数据：
+ * 有些 CMS 会在发布时把日期原样写进更新时间，此时 updated === date，不应显示。
+ */
+export function hasUpdate(post: BlogPost): boolean {
+  return post.updated != null && post.updated > post.date
 }
 
 /** 上一篇／下一篇（按发布时间倒序的相邻关系） */

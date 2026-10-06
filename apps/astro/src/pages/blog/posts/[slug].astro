@@ -16,6 +16,7 @@ import {
   CoverArt,
   formatDate,
   getAdjacentPosts,
+  hasUpdate,
   PostBody,
   PostMeta,
   PostNav,
@@ -39,6 +40,8 @@ const { newer, older } = getAdjacentPosts(post.slug)
 const related = BLOG_POSTS.filter(
   (item) => item.slug !== post.slug && item.category === post.category,
 ).slice(0, 3)
+/** 发布之后就没改过的文章没有更新时间，两处都按这个结果渲染 */
+const updatedAt = hasUpdate(post) ? post.updated : undefined
 ---
 
 <BlogLayout title={`${post.title} · ${BLOG_SITE.name}`} description={post.excerpt}>
@@ -52,6 +55,7 @@ const related = BLOG_POSTS.filter(
         <div class="mt-4">
           <PostMeta
             date={post.date}
+            updated={post.updated}
             category={post.category}
             readingTime={post.readingTime}
             categoryHref={`/blog/categories/${post.category}`}
@@ -95,6 +99,18 @@ const related = BLOG_POSTS.filter(
             <div class="flex justify-between gap-3">
               <dt class="text-foreground-muted">发布</dt>
               <dd><time datetime={post.date}>{formatDate(post.date)}</time></dd>
+            </div>
+            <div class="flex justify-between gap-3">
+              <dt class="text-foreground-muted">更新</dt>
+              {
+                updatedAt ? (
+                  <dd>
+                    <time datetime={updatedAt}>{formatDate(updatedAt)}</time>
+                  </dd>
+                ) : (
+                  <dd class="text-foreground-muted">未修改</dd>
+                )
+              }
             </div>
             <div class="flex justify-between gap-3">
               <dt class="text-foreground-muted">分类</dt>
