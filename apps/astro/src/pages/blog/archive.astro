@@ -1,0 +1,72 @@
+---
+/**
+ * Dusk UI — 归档
+ * ─────────────────────────────────────────────────────────
+ * 按年份倒序分组，每组内维持发布日期倒序。
+ */
+
+import BlogLayout from '../../layouts/BlogLayout.astro'
+import { ArchiveItem, BLOG_POSTS, getArchive, getCategoriesWithCount, getTagsWithCount, TagPill } from '@dusk-ui/ui/demo'
+
+const archive = getArchive()
+const tags = getTagsWithCount()
+const categories = getCategoriesWithCount()
+---
+
+<BlogLayout title="归档 · Dusklight" description="按年份分组的文章归档，全部为示例占位数据。">
+  <main class="mx-auto max-w-[var(--page-max-width)] px-[var(--gutter)] py-10">
+    <h1 class="text-2xl">归档</h1>
+    <p class="mt-3 max-w-[52ch] text-sm leading-relaxed text-foreground-secondary">
+      共 {BLOG_POSTS.length} 篇文章、{tags.length} 个标签、{categories.length} 个分类。按发布年份倒序排列。
+    </p>
+
+    <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
+      <div class="space-y-10">
+        {
+          archive.map((group) => (
+            <section>
+              <h2 class="mb-3 flex items-baseline gap-3 text-lg">
+                <span class="[font-variant-numeric:tabular-nums]">{group.year}</span>
+                <span class="text-xs font-normal text-foreground-muted">
+                  {group.posts.length} 篇
+                </span>
+              </h2>
+              <ul class="rounded-card border border-border bg-surface-1 px-5">
+                {group.posts.map((post) => <ArchiveItem post={post} />)}
+              </ul>
+            </section>
+          ))
+        }
+      </div>
+
+      <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <h2 class="text-md">标签</h2>
+          <div class="mt-3 flex flex-wrap gap-1.5">
+            {tags.map((tag) => <TagPill label={tag.name} href={`/blog/tags/${tag.slug}`} count={tag.count} />)}
+          </div>
+        </div>
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <h2 class="text-md">分类</h2>
+          <ul class="mt-3 space-y-1">
+            {
+              categories.map((category) => (
+                <li>
+                  <a
+                    href={`/blog/categories/${category.slug}`}
+                    class="flex items-center justify-between gap-3 rounded-control px-2 py-1.5 text-sm transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:bg-surface-2"
+                  >
+                    <span class="truncate">{category.name}</span>
+                    <span class="text-xs text-foreground-muted [font-variant-numeric:tabular-nums]">
+                      {category.count}
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+</BlogLayout>
