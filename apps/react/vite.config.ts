@@ -11,13 +11,17 @@ const root = import.meta.dirname
  *
  * 两个入口：
  * - index.html —— 组件展示页
- * - blog/index.html —— /blog 的降级说明页（真正的博客在 Astro 工程）
+ * - blog.html —— /blog 的降级说明页（真正的博客在 Astro 工程）
  */
 function blogRoute(): Plugin {
   // /blog 不带扩展名时也要落到 blog.html，而不是单页兜底的首页。
   // dev 与 preview 两处都要配，否则两边行为不一致。
   const rewrite: Connect.NextHandleFunction = (req, _res, next) => {
-    if (req.url === '/blog') req.url = '/blog.html'
+    const url = req.url ?? ''
+    const pathname = url.split('?')[0]
+    if (pathname === '/blog' || pathname === '/blog/') {
+      req.url = `/blog.html${url.slice(pathname.length)}`
+    }
     next()
   }
 

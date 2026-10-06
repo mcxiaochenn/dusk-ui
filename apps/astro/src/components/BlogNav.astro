@@ -133,7 +133,7 @@ const isActive = (item: NavItem) =>
   transform 过渡，hidden 会命中 UA 的 [hidden]{display:none} 让整块脱离渲染树，
   滑出动画随之失效。
 -->
-<div id="blog-nav-drawer" class="blog-nav__drawer" data-open="false">
+<div id="blog-nav-drawer" class="blog-nav__drawer" data-open="false" inert>
   <button type="button" class="blog-nav__scrim" tabindex="-1" aria-hidden="true" data-drawer-close>
   </button>
   <div class="blog-nav__panel glass-strong" role="dialog" aria-modal="true" aria-label="博客导航">
@@ -338,12 +338,32 @@ const isActive = (item: NavItem) =>
   }
 
   if (drawer && drawerToggle) {
+    const closeButton = drawer.querySelector<HTMLButtonElement>('.blog-nav__panel [data-drawer-close]')!
+    const background = new Map<HTMLElement, boolean>()
+    let previousOverflow = ''
+
     const setOpen = (open: boolean) => {
       drawer.dataset.open = String(open)
+      drawer.inert = !open
       drawerToggle.setAttribute('aria-expanded', String(open))
       // 抽屉占满视口，背景不能再跟着滚；html 有 scrollbar-gutter: stable，
       // 锁滚动时不会因滚动条消失而横向抖动。
-      document.body.style.overflow = open ? 'hidden' : ''
+      if (open) {
+        previousOverflow = document.body.style.overflow
+        for (const element of document.body.children) {
+          if (element instanceof HTMLElement && element !== drawer) {
+            background.set(element, element.inert)
+            element.inert = true
+          }
+        }
+        document.body.style.overflow = 'hidden'
+        closeButton.focus()
+      } else {
+        for (const [element, inert] of background) element.inert = inert
+        background.clear()
+        document.body.style.overflow = previousOverflow
+        drawerToggle.focus()
+      }
     }
 
     drawerToggle.addEventListener('click', () => {
@@ -355,7 +375,24 @@ const isActive = (item: NavItem) =>
     })
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && drawer.dataset.open === 'true') setOpen(false)
+      if (drawer.dataset.open !== 'true') return
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setOpen(false)
+      } else if (event.key === 'Tab') {
+        const controls = drawer.querySelectorAll<HTMLElement>(
+          '.blog-nav__panel button, .blog-nav__panel a[href]',
+        )
+        const first = controls[0]
+        const last = controls[controls.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
     })
   }
 </script>

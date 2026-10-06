@@ -292,7 +292,11 @@ console.log('\n── Astro 工程 ──')
   )
   await page.waitForTimeout(1600)
 
-  /* Tabs 键盘 */
+  /* 可见岛先完成 hydration，避免首次聚焦触发滚动后节点被替换。 */
+  await page.getByRole('tab', { name: '材质' }).scrollIntoViewIfNeeded()
+  await page.waitForFunction(() =>
+    !document.querySelector('[role="tab"]').closest('astro-island').hasAttribute('ssr'),
+  )
   await page.getByRole('tab', { name: '材质' }).focus()
   await page.keyboard.press('ArrowRight')
   await page.waitForTimeout(350)
@@ -762,6 +766,49 @@ for (const [name, url] of [
   }
 
   record(`${name} · 开关与加载态场景无控制台报错`, log.errors.length === 0, log.errors.slice(0, 2).join(' | '))
+  await ctx.close()
+}
+
+/* 博客导航回归：真实页面加载与键盘焦点。 */
+for (const path of ['/blog', '/blog/', '/blog?from=demo?extra=1']) {
+  const { ctx, page, log } = await open(browser, `${REACT}${path}`)
+  record(`React · ${path} 显示博客说明页`, await page.getByRole('heading', { name: '这个站点跑在 Astro 工程里' }).count() === 1)
+  record(`React · ${path} 无控制台报错`, log.errors.length === 0)
+  await ctx.close()
+}
+
+{
+  const { ctx, page, log } = await open(browser, `${ASTRO}/blog/`, {
+    viewport: { width: 390, height: 844 },
+  })
+  const toggle = page.locator('#blog-nav-toggle')
+  const close = page.getByRole('button', { name: '关闭导航菜单' })
+  const last = page.locator('#blog-nav-drawer a').last()
+  await toggle.focus()
+  await page.keyboard.press('Enter')
+  record('博客 · 打开抽屉聚焦关闭按钮', await close.evaluate((el) => document.activeElement === el))
+  record('博客 · 打开抽屉隔离背景并锁滚动', await page.evaluate(() =>
+    document.querySelector('main').inert && document.body.style.overflow === 'hidden',
+  ))
+  await page.keyboard.press('Shift+Tab')
+  record('博客 · Shift+Tab 循环到末项', await last.evaluate((el) => document.activeElement === el))
+  await page.keyboard.press('Tab')
+  record('博客 · Tab 循环到首项', await close.evaluate((el) => document.activeElement === el))
+  await page.keyboard.press('Escape')
+  record('博客 · Esc 关闭并恢复菜单按钮焦点', await toggle.evaluate((el) =>
+    document.activeElement === el && el.getAttribute('aria-expanded') === 'false',
+  ))
+  record('博客 · 关闭抽屉恢复背景和滚动', await page.evaluate(() =>
+    !document.querySelector('main').inert && document.body.style.overflow === '' &&
+    document.querySelector('#blog-nav-drawer').inert,
+  ))
+  await toggle.click()
+  await close.click()
+  record('博客 · 关闭按钮恢复焦点', await toggle.evaluate((el) => document.activeElement === el))
+  await toggle.click()
+  await page.locator('.blog-nav__scrim').click({ position: { x: 5, y: 100 } })
+  record('博客 · 遮罩关闭恢复焦点', await toggle.evaluate((el) => document.activeElement === el))
+  record('博客 · 无控制台或 hydration 错误', log.errors.length === 0 && hydrationIssues(log).length === 0)
   await ctx.close()
 }
 
