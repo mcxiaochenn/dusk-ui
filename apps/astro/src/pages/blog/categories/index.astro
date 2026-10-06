@@ -1,0 +1,40 @@
+---
+/**
+ * Dusk UI — 分类索引
+ */
+
+import BlogLayout from '../../../layouts/BlogLayout.astro'
+import { getCategoriesWithCount } from '@dusk-ui/ui/demo'
+
+const categories = getCategoriesWithCount()
+---
+
+<BlogLayout title="分类 · Dusklight" description="全部分类及其文章数量。">
+  <main class="mx-auto max-w-[var(--page-max-width)] px-[var(--gutter)] py-10">
+    <h1 class="text-2xl">分类</h1>
+    <p class="mt-3 max-w-[52ch] text-sm leading-relaxed text-foreground-secondary">
+      {categories.length} 个分类。每篇文章只归入一个分类，标签负责横向关联。
+    </p>
+
+    <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {
+        categories.map((category) => (
+          <a
+            href={`/blog/categories/${category.slug}`}
+            class="rounded-card border border-border bg-surface-1 p-6 transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:border-border-strong hover:bg-surface-2"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-lg">{category.name}</h2>
+              <span class="shrink-0 rounded-pill border border-border bg-surface-2 px-2.5 py-0.5 text-xs text-foreground-secondary [font-variant-numeric:tabular-nums]">
+                {category.count} 篇
+              </span>
+            </div>
+            <p class="mt-2 text-sm leading-relaxed text-foreground-secondary">
+              {category.description}
+            </p>
+          </a>
+        ))
+      }
+    </div>
+  </main>
+</BlogLayout>

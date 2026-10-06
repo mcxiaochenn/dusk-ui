@@ -28,3 +28,55 @@ export {
 } from './islands'
 
 export { ReactShowcase } from './ReactShowcase'
+
+/* ═══════════════════════════════════════════════════════
+   博客 Demo
+   ─────────────────────────────────────────────────────────
+   内容与展示组件都放在这里，页面结构由 Astro 的文件路由提供。
+   组件本身不依赖路由，React 工程也能直接使用。
+   ═══════════════════════════════════════════════════════ */
+
+export {
+  BLOG_AUTHOR,
+  BLOG_CATEGORIES,
+  BLOG_POSTS,
+  BLOG_SITE,
+  BLOG_SKILLS,
+  BLOG_TAGS,
+  categoryName,
+  coverClassName,
+  formatDate,
+  formatDateShort,
+  getAdjacentPosts,
+  getArchive,
+  getCategoriesWithCount,
+  getFeaturedPost,
+  getPostBySlug,
+  getPostsByCategory,
+  getPostsByTag,
+  getSortedPosts,
+  getTagsWithCount,
+  hasUpdate,
+} from './blog/data'
+export type {
+  BlogArchiveYear,
+  BlogBlock,
+  BlogCategory,
+  BlogCoverId,
+  BlogPost,
+  BlogTag,
+} from './blog/data'
+
+export {
+  ArchiveItem,
+  AuthorCard,
+  BlogUnavailable,
+  CategoryPill,
+  CoverArt,
+  PinnedBadge,
+  PostBody,
+  PostCard,
+  PostMeta,
+  PostNav,
+  TagPill,
+} from './blog/components'

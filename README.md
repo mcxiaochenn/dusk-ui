@@ -202,26 +202,21 @@ dusk-ui/
 │  └─ ui/               唯一的组件与样式来源
 │     └─ src/
 │        ├─ components/ 五个核心组件 + 四个基础控件
-│        ├─ demo/       共用演示数据 + Astro Islands 包装层
+│        ├─ demo/       共用演示数据 + Astro Islands 包装层 + 博客 Demo（blog/）
 │        ├─ motion/     动效常量、cn()、SSR hook
 │        ├─ styles/     tokens.css + globals.css
 │        └─ index.ts    唯一公共 API
 ├─ apps/
 │  ├─ react/            独立 React 展示工程（Vite，端口 5181）
+│  │  └─ blog.html      /blog 入口：说明博客站点位于 Astro 工程
 │  └─ astro/            Astro 展示工程（端口 5182）
 │     └─ src/
-│        ├─ layouts/    Layout.astro（含首屏主题脚本）
-│        └─ pages/      index.astro（Astro 页面 + React Islands）
+│        ├─ components/ BlogNav.astro（博客悬浮导航 + 移动端抽屉）
+│        ├─ layouts/    Layout.astro（展示页骨架）· BlogLayout.astro（博客骨架）
+│        └─ pages/
+│           ├─ index.astro    展示页（含博客 Demo 入口卡片）
+│           └─ blog/          博客 Demo：首页 / 详情 / 归档 / 标签 / 分类 / 关于
 ├─ scripts/             验收脚本
-├─ AGENTS.md
-├─ ATTRIBUTION.md
-└─ README.md
-```
-│  ├─ lib/              动效常量与工具函数
-│  ├─ styles/           tokens.css + globals.css
-│  ├─ App.tsx           展示页
-│  └─ main.tsx
-├─ scripts/             浏览器验收脚本
 ├─ AGENTS.md
 ├─ ATTRIBUTION.md
 └─ README.md

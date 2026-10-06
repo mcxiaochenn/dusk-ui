@@ -1,0 +1,122 @@
+---
+/**
+ * Dusk UI — 关于页
+ * ─────────────────────────────────────────────────────────
+ * 作者信息、站点说明与站内导航。全部静态输出。
+ */
+
+import BlogLayout from '../../layouts/BlogLayout.astro'
+import {
+  AuthorCard,
+  BLOG_AUTHOR,
+  BLOG_POSTS,
+  BLOG_SITE,
+  BLOG_SKILLS,
+  getCategoriesWithCount,
+  TagPill,
+} from '@dusk-ui/ui/demo'
+
+const categories = getCategoriesWithCount()
+---
+
+<BlogLayout title="关于 · Dusklight" description={BLOG_AUTHOR.bio}>
+  <main class="mx-auto max-w-[var(--page-max-width)] px-[var(--gutter)] py-10">
+    <h1 class="text-2xl">关于</h1>
+
+    <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
+      <div class="space-y-6">
+        <AuthorCard
+          name={BLOG_AUTHOR.name}
+          role={BLOG_AUTHOR.role}
+          bio={BLOG_AUTHOR.bio}
+          avatar={BLOG_AUTHOR.avatar}
+          location={BLOG_AUTHOR.location}
+        />
+
+        <section class="rounded-card border border-border bg-surface-1 p-6">
+          <h2 class="text-lg">关于这个站点</h2>
+          <p class="mt-3 text-sm leading-relaxed text-foreground-secondary">
+            {BLOG_SITE.description}
+          </p>
+          <p class="mt-3 text-sm leading-relaxed text-foreground-secondary">
+            页面结构参考 Dusklight：首页文章流、详情页、归档、标签、分类与关于。
+            所有样式取自
+            <code class="mx-1 rounded-control bg-surface-2 px-1.5 py-0.5 font-mono text-xs">
+              @dusk-ui/ui
+            </code>
+            的同一套令牌，与组件展示页是一套东西，不存在第二份配色。
+          </p>
+        </section>
+
+        <section class="rounded-card border border-border bg-surface-1 p-6">
+          <h2 class="text-lg">常写的东西</h2>
+          <div class="mt-4 space-y-4">
+            {
+              categories.map((category) => (
+                <div class="flex items-baseline justify-between gap-4 border-b border-border-subtle pb-3 last:border-b-0 last:pb-0">
+                  <a
+                    href={`/blog/categories/${category.slug}`}
+                    class="text-md font-medium transition-colors hover:text-accent"
+                  >
+                    {category.name}
+                  </a>
+                  <p class="min-w-0 flex-1 truncate text-xs text-foreground-muted">
+                    {category.description}
+                  </p>
+                  <span class="shrink-0 text-xs text-foreground-muted [font-variant-numeric:tabular-nums]">
+                    {category.count} 篇
+                  </span>
+                </div>
+              ))
+            }
+          </div>
+        </section>
+      </div>
+
+      <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <h2 class="text-md">关键词</h2>
+          <div class="mt-3 flex flex-wrap gap-1.5">
+            {BLOG_SKILLS.map((skill) => <TagPill label={skill} />)}
+          </div>
+        </div>
+
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <h2 class="text-md">站点数据</h2>
+          <dl class="mt-3 space-y-2 text-sm">
+            <div class="flex justify-between gap-3">
+              <dt class="text-foreground-muted">文章</dt>
+              <dd class="[font-variant-numeric:tabular-nums]">{BLOG_POSTS.length}</dd>
+            </div>
+            <div class="flex justify-between gap-3">
+              <dt class="text-foreground-muted">分类</dt>
+              <dd class="[font-variant-numeric:tabular-nums]">{categories.length}</dd>
+            </div>
+            <div class="flex justify-between gap-3">
+              <dt class="text-foreground-muted">署名</dt>
+              <dd>{BLOG_AUTHOR.handle}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <h2 class="text-md">站内导航</h2>
+          <ul class="mt-3 space-y-1 text-sm">
+            {
+              BLOG_AUTHOR.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="inline-flex rounded-control px-2 py-1.5 text-foreground-secondary transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:bg-surface-2 hover:text-foreground"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+</BlogLayout>

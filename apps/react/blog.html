@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>博客 Demo · Dusk UI</title>
+    <meta name="description" content="博客 Demo 位于 Astro 展示工程，本页说明原因与跳转方式。" />
+    <script>
+      // 与根 index.html 中的首屏脚本逐字一致，避免深浅主题闪烁。
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('dusk-ui-theme')
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          var dark = stored ? stored === 'dark' : prefersDark
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (e) {
+          /* localStorage 不可用时静默降级为浅色 */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/blog.tsx"></script>
+  </body>
+</html>

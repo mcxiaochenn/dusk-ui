@@ -1,0 +1,137 @@
+---
+/**
+ * Dusk UI — 博客首页 / 文章列表
+ * ─────────────────────────────────────────────────────────
+ * 完全静态输出：所有内容在构建时就渲染成 HTML，
+ * 页面中不含任何 React Islands（主题切换在布局里）。
+ */
+
+import BlogLayout from '../../layouts/BlogLayout.astro'
+import {
+  ArchiveItem,
+  BLOG_AUTHOR,
+  BLOG_POSTS,
+  BLOG_SITE,
+  categoryName,
+  getCategoriesWithCount,
+  getFeaturedPost,
+  getSortedPosts,
+  getTagsWithCount,
+  PostCard,
+  TagPill,
+} from '@dusk-ui/ui/demo'
+
+const featured = getFeaturedPost()
+const featuredSlug = featured?.slug
+const posts = getSortedPosts()
+  .filter((post) => post.slug !== featuredSlug)
+  // 置顶排在最前，其余维持倒序（Array.sort 是稳定排序）
+  .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)))
+const tags = getTagsWithCount()
+const categories = getCategoriesWithCount()
+
+const TITLE = `${BLOG_SITE.name} · ${BLOG_SITE.tagline}`
+---
+
+<BlogLayout title={TITLE} description={BLOG_SITE.description}>
+  <main class="mx-auto max-w-[var(--page-max-width)] px-[var(--gutter)] py-10">
+    <!-- ── Hero：纯静态 ── -->
+    <section class="rounded-card border border-border bg-surface-1 p-6 sm:p-8">
+      <h1 class="text-2xl">{BLOG_SITE.name}</h1>
+      <p class="mt-2 text-md text-foreground-secondary">{BLOG_SITE.tagline}</p>
+      <p class="mt-4 max-w-[52ch] text-sm leading-relaxed text-foreground-secondary">
+        {BLOG_SITE.description}
+      </p>
+      <dl class="mt-6 flex flex-wrap gap-x-8 gap-y-3">
+        <div>
+          <dt class="text-xs text-foreground-muted">文章</dt>
+          <dd class="text-lg [font-variant-numeric:tabular-nums]">{BLOG_POSTS.length}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-foreground-muted">标签</dt>
+          <dd class="text-lg [font-variant-numeric:tabular-nums]">{tags.length}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-foreground-muted">分类</dt>
+          <dd class="text-lg [font-variant-numeric:tabular-nums]">{categories.length}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-foreground-muted">作者</dt>
+          <dd class="text-lg">{BLOG_AUTHOR.name}</dd>
+        </div>
+      </dl>
+      <div class="mt-6 flex flex-wrap gap-2">
+        <a
+          href="#latest"
+          class="inline-flex h-10 items-center rounded-control bg-accent px-4 text-base font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+        >
+          浏览最新文章
+        </a>
+        <a
+          href="/blog/archive"
+          class="inline-flex h-10 items-center rounded-control border border-border bg-surface-2 px-4 text-base font-medium transition-colors hover:bg-surface-3"
+        >
+          查看归档
+        </a>
+      </div>
+    </section>
+
+    <!-- ── 全站推荐：横向卡片 ── -->
+    {
+      featured ? (
+        <section class="mt-10">
+          <h2 class="mb-4 text-xl">全站推荐</h2>
+          <PostCard post={featured} orientation="horizontal" />
+        </section>
+      ) : null
+    }
+
+    <div class="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <!-- ── 文章列表 ── -->
+      <section id="latest" class="scroll-mt-20">
+        <h2 class="mb-4 text-xl">最新文章</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {posts.map((post) => <PostCard post={post} />)}
+        </div>
+      </section>
+
+      <!-- ── 侧栏：全部为 Astro 静态输出 ── -->
+      <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <h2 class="text-md">最近更新</h2>
+          <ul class="mt-3">
+            {posts.slice(0, 5).map((post) => <ArchiveItem post={post} />)}
+          </ul>
+        </div>
+
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <h2 class="text-md">标签</h2>
+          <div class="mt-3 flex flex-wrap gap-1.5">
+            {tags.map((tag) => <TagPill label={tag.name} href={`/blog/tags/${tag.slug}`} count={tag.count} />)}
+          </div>
+        </div>
+
+        <div class="rounded-card border border-border bg-surface-1 p-5">
+          <h2 class="text-md">分类</h2>
+          <ul class="mt-3 space-y-1">
+            {
+              categories.map((category) => (
+                <li>
+                  <a
+                    href={`/blog/categories/${category.slug}`}
+                    class="flex items-center justify-between gap-3 rounded-control px-2 py-1.5 text-sm transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:bg-surface-2"
+                  >
+                    <span class="truncate">{categoryName(category.slug)}</span>
+                    <span class="text-xs text-foreground-muted [font-variant-numeric:tabular-nums]">
+                      {category.count}
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+</BlogLayout>

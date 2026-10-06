@@ -1,0 +1,59 @@
+---
+/**
+ * Dusk UI — 单分类文章列表
+ */
+
+import BlogLayout from '../../../layouts/BlogLayout.astro'
+import {
+  getCategoriesWithCount,
+  getPostsByCategory,
+  PostCard,
+  type BlogCategory,
+} from '@dusk-ui/ui/demo'
+
+export function getStaticPaths() {
+  return getCategoriesWithCount().map((category) => ({
+    params: { category: category.slug },
+    props: { category },
+  }))
+}
+
+interface Props {
+  category: BlogCategory
+}
+
+const { category } = Astro.props
+const posts = getPostsByCategory(Astro.params.category)
+---
+
+<BlogLayout title={`${category.name} · Dusklight`} description={category.description}>
+  <main class="mx-auto max-w-[var(--page-max-width)] px-[var(--gutter)] py-10">
+    <nav class="text-xs text-foreground-muted">
+      <a href="/blog" class="transition-colors hover:text-foreground">博客</a>
+      <span aria-hidden="true"> / </span>
+      <a href="/blog/categories" class="transition-colors hover:text-foreground">分类</a>
+    </nav>
+
+    <h1 class="mt-3 text-2xl">{category.name}</h1>
+    <p class="mt-3 max-w-[52ch] text-sm leading-relaxed text-foreground-secondary">
+      {category.description}
+    </p>
+    <p class="mt-2 text-sm text-foreground-muted">共 {posts.length} 篇文章</p>
+
+    {
+      posts.length > 0 ? (
+        <div class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {posts.map((post) => <PostCard post={post} />)}
+        </div>
+      ) : (
+        <p class="mt-8 rounded-card border border-border bg-surface-1 p-6 text-sm text-foreground-secondary">
+          这个分类下还没有文章。
+        </p>
+      )
+    }
+
+    <p class="mt-8 text-xs text-foreground-muted">
+      <a href="/blog/categories" class="transition-colors hover:text-foreground">返回分类索引</a>
+    </p>
+  </main>
+</BlogLayout>

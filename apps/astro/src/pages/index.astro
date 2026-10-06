@@ -117,6 +117,54 @@ import {
       </div>
     </section>
 
+    <!-- ── 博客 Demo 入口：静态链接，不新增 Island ── -->
+    <section id="blog" class="scroll-mt-8">
+      <div class="mb-5">
+        <h2 class="text-xl">博客 Demo</h2>
+        <p class="mt-1.5 max-w-prose text-sm text-foreground-secondary">
+          同一套令牌用在真实内容排版上的样子。静态页面由 Astro
+          输出，内容与组件都取自本包。
+        </p>
+      </div>
+      <a
+        href="/blog"
+        class="group flex flex-col gap-4 rounded-card border border-border bg-surface-1 p-6 transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:border-border-strong sm:flex-row sm:items-center"
+      >
+        <span
+          class="grid size-12 shrink-0 place-items-center rounded-control bg-accent text-accent-foreground"
+        >
+          <svg
+            class="size-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M4 19.5V6a2 2 0 0 1 2-2h13"></path>
+            <path d="M6 4v15"></path>
+            <path d="M10 8h6M10 12h6"></path>
+          </svg>
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="text-lg font-medium">Dusklight 博客 Demo</span>
+            <span class="rounded-pill border border-border bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted">
+              /blog
+            </span>
+          </span>
+          <span class="mt-1.5 block text-sm leading-relaxed text-foreground-secondary">
+            首页 · 文章详情 · 归档 · 标签 · 分类 · 关于，全部为静态页面与示例占位数据。
+          </span>
+        </span>
+        <span
+          class="inline-flex h-10 shrink-0 items-center rounded-control bg-accent px-4 text-base font-medium text-accent-foreground transition-colors group-hover:bg-accent-hover"
+        >
+          进入博客
+        </span>
+      </a>
+    </section>
+
     <!-- ── 统计卡片：需要加载态切换，client:visible按需 hydrate ── -->
     <section id="stats" class="scroll-mt-8">
       <div class="mb-5">
