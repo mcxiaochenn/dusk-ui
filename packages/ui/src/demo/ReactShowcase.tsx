@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { Palette } from 'lucide-react'
+import { BookOpen, Palette } from 'lucide-react'
 import { Button } from '../components/Button'
 import { ThemeToggle } from '../components/ThemeToggle'
 import type { ToastTone } from '../components/Toast'
@@ -129,6 +129,38 @@ export function ReactShowcase() {
             </div>
           </motion.div>
         </section>
+
+        {/* ── 博客 Demo 入口 ──
+            博客站点的页面依赖 Astro 的文件路由，跑在另一个展示工程里；
+            这里只提供入口，点击后跳转到 /blog。 */}
+        <Section
+          id="blog"
+          title="博客 Demo"
+          description="同一套令牌用在真实内容排版上的样子。内容与组件都取自本包。"
+        >
+          <a
+            href="/blog"
+            className="group flex flex-col gap-4 rounded-card border border-border bg-surface-1 p-6 transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:border-border-strong sm:flex-row sm:items-center"
+          >
+            <span className="grid size-12 shrink-0 place-items-center rounded-control bg-accent text-accent-foreground">
+              <BookOpen className="size-5" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-lg font-medium">Dusklight 博客 Demo</span>
+                <span className="rounded-pill border border-border bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted">
+                  /blog
+                </span>
+              </span>
+              <span className="mt-1.5 block text-sm leading-relaxed text-foreground-secondary">
+                首页 · 文章详情 · 归档 · 标签 · 分类 · 关于，全部为静态页面与示例占位数据。
+              </span>
+            </span>
+            <span className="inline-flex h-10 shrink-0 items-center rounded-control bg-accent px-4 text-base font-medium text-accent-foreground transition-colors group-hover:bg-accent-hover">
+              进入博客
+            </span>
+          </a>
+        </Section>
 
         {/* ── 统计卡片 ── */}
         <Section
