@@ -1,0 +1,47 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    versioning-strategy: "increase"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+    assignees:
+      - "mcxiaochenn"
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      astro:
+        patterns:
+          - "astro"
+          - "@astrojs/*"
+      vite:
+        patterns:
+          - "vite"
+          - "@vitejs/plugin-react"
+      testing:
+        patterns:
+          - "vitest"
+          - "jsdom"
+          - "@testing-library/*"
+      tooling:
+        patterns:
+          - "typescript"
+          - "playwright-core"
+          - "@types/node"
