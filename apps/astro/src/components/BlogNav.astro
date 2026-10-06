@@ -1,0 +1,361 @@
+---
+/**
+ * Dusk UI — 博客悬浮导航
+ * ─────────────────────────────────────────────────────────
+ * 形态参考 blog.mcxiaochen.top：sticky 通栏 + 左右两枚胶囊，
+ * 未滚动时完全透明，滚动后淡入玻璃并轻微下沉，形成「浮起来」的过程。
+ * 配色、材质、圆角、时长全部走 Dusk UI 令牌，视觉上是本项目的一部分。
+ *
+ * 两个实现选择：
+ * 1. 玻璃层画在 ::before 上，而不是直接给胶囊挂 .glass —— 淡入只改 opacity，
+ *    不需要动画化 backdrop-filter（docs/MOTION.md 明确禁止），
+ *    且未滚动时不产生模糊的合成开销。
+ * 2. 抽屉与滚动监听都是原生脚本，不新增 Island。
+ *    全站唯一 hydrate 的组件仍然是主题切换。
+ */
+import { ThemeToggle } from '@dusk-ui/ui'
+
+/** 导航项与抽屉共用的图标名 */
+type NavIcon = 'home' | 'archive' | 'tag' | 'folder' | 'user'
+
+interface NavItem {
+  href: string
+  label: string
+  icon: NavIcon
+  /** 仅在路径完全相等时才算当前页（用于首页，避免 /blog 命中所有子页） */
+  exact?: boolean
+}
+
+/** 图标沿用 lucide 的描边路径，与 React 侧组件同一套图形语言 */
+const ICONS: Record<NavIcon | 'menu' | 'close', string> = {
+  home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  archive:
+    '<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+  tag: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+  folder:
+    '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+}
+
+/** 所有图标共用的 svg 属性，避免在每个标签上重复一遍 */
+const SVG_ATTRS = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  'stroke-width': 2,
+  'stroke-linecap': 'round',
+  'stroke-linejoin': 'round',
+  'aria-hidden': 'true',
+} as const
+
+const NAV_ITEMS: NavItem[] = [
+  { href: '/blog', label: '首页', icon: 'home', exact: true },
+  { href: '/blog/archive', label: '归档', icon: 'archive' },
+  { href: '/blog/tags', label: '标签', icon: 'tag' },
+  { href: '/blog/categories', label: '分类', icon: 'folder' },
+  { href: '/blog/about', label: '关于', icon: 'user' },
+]
+
+const path = Astro.url.pathname
+const isActive = (item: NavItem) =>
+  item.exact ? path === item.href || path === `${item.href}/` : path.startsWith(item.href)
+---
+
+<header class="blog-nav" data-scrolled="false">
+  <div class="mx-auto flex max-w-[var(--page-max-width)] items-center justify-between gap-2">
+    <!-- ── 左：站点标识 ── -->
+    <div class="blog-nav__pill pointer-events-auto flex items-center p-1">
+      <a
+        href="/blog"
+        class="flex h-10 items-center gap-2.5 rounded-pill px-2 transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:bg-accent-subtle"
+      >
+        <span class="grid size-7 place-items-center rounded-control bg-accent text-accent-foreground">
+          <svg {...SVG_ATTRS} class="size-3.5">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"></path>
+          </svg>
+        </span>
+        <span class="text-md font-semibold">Dusklight</span>
+      </a>
+    </div>
+
+    <!-- ── 右：导航 + 主题切换（+ 移动端菜单键） ── -->
+    <nav
+      aria-label="博客主导航"
+      class="blog-nav__pill pointer-events-auto flex items-center gap-1 p-1"
+    >
+      <ul class="hidden items-center gap-1 md:flex">
+        {
+          NAV_ITEMS.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                aria-current={isActive(item) ? 'page' : undefined}
+                class:list={[
+                  'inline-flex h-10 items-center gap-1.5 rounded-pill px-3 text-base font-medium',
+                  'transition-colors duration-[150ms] ease-[var(--ease-standard)]',
+                  isActive(item)
+                    ? 'bg-accent-subtle text-foreground'
+                    : 'text-foreground-secondary hover:bg-accent-subtle hover:text-foreground',
+                ]}
+              >
+                <svg {...SVG_ATTRS} class="size-4 shrink-0" set:html={ICONS[item.icon]} />
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="ml-0.5 flex items-center gap-1 md:border-l md:border-border-subtle md:pl-1.5">
+        <ThemeToggle client:load />
+
+        <button
+          id="blog-nav-toggle"
+          type="button"
+          class="grid size-10 place-items-center rounded-pill text-foreground-secondary transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:bg-accent-subtle hover:text-foreground md:hidden"
+          aria-label="打开导航菜单"
+          aria-expanded="false"
+          aria-controls="blog-nav-drawer"
+        >
+          <svg {...SVG_ATTRS} class="size-[18px]" set:html={ICONS.menu} />
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!--
+  移动端抽屉。
+  关闭态用 visibility 而非 HTML 的 hidden 属性：容器必须常驻 fixed 才能播
+  transform 过渡，hidden 会命中 UA 的 [hidden]{display:none} 让整块脱离渲染树，
+  滑出动画随之失效。
+-->
+<div id="blog-nav-drawer" class="blog-nav__drawer" data-open="false">
+  <button type="button" class="blog-nav__scrim" tabindex="-1" aria-hidden="true" data-drawer-close>
+  </button>
+  <div class="blog-nav__panel glass-strong" role="dialog" aria-modal="true" aria-label="博客导航">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold tracking-[var(--tracking-wide)] text-foreground-muted uppercase">
+        菜单
+      </span>
+      <button
+        type="button"
+        class="grid size-10 place-items-center rounded-pill text-foreground-muted transition-colors duration-[150ms] ease-[var(--ease-standard)] hover:bg-accent-subtle hover:text-foreground"
+        aria-label="关闭导航菜单"
+        data-drawer-close
+      >
+        <svg {...SVG_ATTRS} class="size-[18px]" set:html={ICONS.close} />
+      </button>
+    </div>
+
+    <nav aria-label="博客主导航（移动端）">
+      <ul class="flex flex-col gap-1">
+        {
+          NAV_ITEMS.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                aria-current={isActive(item) ? 'page' : undefined}
+                class:list={[
+                  'flex h-11 items-center gap-3 rounded-control px-3 text-md',
+                  'transition-colors duration-[150ms] ease-[var(--ease-standard)]',
+                  isActive(item)
+                    ? 'bg-accent-subtle text-foreground'
+                    : 'text-foreground-secondary hover:bg-accent-subtle hover:text-foreground',
+                ]}
+              >
+                <svg {...SVG_ATTRS} class="size-[18px] shrink-0" set:html={ICONS[item.icon]} />
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!--
+  用 is:global 而非默认的 scoped：本段里有后代选择器与伪元素，
+  scoped 会给每个复合选择器补 data-astro-cid，规则一变多就容易失配。
+  选择器全部以 .blog-nav 开头，不会外溢到其他页面。
+-->
+<style is:global>
+  /* ═══════════════════════════════════════════════════════
+     容器 — 通栏 sticky，本身透明、不拦截点击
+     ═══════════════════════════════════════════════════════ */
+  .blog-nav {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: var(--space-2) var(--gutter);
+    /* 空白处让点击穿透到底层内容，只有胶囊接收事件 */
+    pointer-events: none;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     胶囊 — 玻璃层在伪元素上，随滚动淡入
+     ═══════════════════════════════════════════════════════ */
+  .blog-nav__pill {
+    position: relative;
+    border-radius: var(--radius-pill);
+    transition: transform var(--duration-feedback) var(--ease-standard);
+  }
+
+  .blog-nav__pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    /* 显式继承连续曲率：带 backdrop-filter 的伪元素在部分引擎上
+       会被回退计算成 round，与外层 squircle 的裁切边界错位。 */
+    corner-shape: inherit;
+    border: 1px solid var(--glass-border);
+    background-color: var(--glass-bg);
+    box-shadow: var(--shadow-lg), var(--glass-highlight);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-feedback) var(--ease-standard);
+  }
+
+  /* 滚动后：玻璃显形 + 轻微下沉，与页面内容拉开一层 */
+  .blog-nav[data-scrolled='true'] .blog-nav__pill {
+    transform: translateY(var(--space-1));
+  }
+
+  .blog-nav[data-scrolled='true'] .blog-nav__pill::before {
+    opacity: 1;
+  }
+
+  /* 与 globals.css 中 .glass 的降级口径保持一致 */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .blog-nav__pill::before {
+      background-color: var(--surface-fallback);
+      border-color: var(--border);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .blog-nav__pill::before {
+      background-color: var(--surface-fallback);
+      border-color: var(--border);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     移动端抽屉 — 右侧滑入
+     ═══════════════════════════════════════════════════════ */
+  .blog-nav__drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    visibility: hidden;
+    transition: visibility 0s linear var(--duration-dialog);
+  }
+
+  .blog-nav__drawer[data-open='true'] {
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .blog-nav__scrim {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    background-color: var(--overlay);
+    opacity: 0;
+    cursor: default;
+    transition: opacity var(--duration-dialog) var(--ease-standard);
+  }
+
+  .blog-nav__drawer[data-open='true'] .blog-nav__scrim {
+    opacity: 1;
+  }
+
+  .blog-nav__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    width: min(82vw, 20rem);
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-6) var(--space-4);
+    overflow-y: auto;
+    /* glass-strong 默认四边都有边框与圆角，抽屉只需要左侧的分隔线 */
+    border-width: 0 0 0 1px;
+    border-radius: 0;
+    transform: translateX(100%);
+    transition: transform var(--duration-dialog) var(--ease-standard);
+  }
+
+  .blog-nav__drawer[data-open='true'] .blog-nav__panel {
+    transform: translateX(0);
+  }
+</style>
+
+<script>
+  /* 滚动实化的阈值：越过几像素就认为「已经离开页首」 */
+  const SCROLL_THRESHOLD = 8
+
+  const header = document.querySelector<HTMLElement>('.blog-nav')
+  const drawer = document.getElementById('blog-nav-drawer')
+  const drawerToggle = document.getElementById('blog-nav-toggle')
+
+  if (header) {
+    let queued = false
+
+    const sync = () => {
+      queued = false
+      const scrolled = window.scrollY > SCROLL_THRESHOLD
+      header.dataset.scrolled = String(scrolled)
+    }
+
+    // 滚动事件里只排一帧任务，避免每像素都写一次 DOM
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (queued) return
+        queued = true
+        requestAnimationFrame(sync)
+      },
+      { passive: true },
+    )
+
+    // 刷新时可能已经停在页面中部，需要立刻同步一次
+    sync()
+  }
+
+  if (drawer && drawerToggle) {
+    const setOpen = (open: boolean) => {
+      drawer.dataset.open = String(open)
+      drawerToggle.setAttribute('aria-expanded', String(open))
+      // 抽屉占满视口，背景不能再跟着滚；html 有 scrollbar-gutter: stable，
+      // 锁滚动时不会因滚动条消失而横向抖动。
+      document.body.style.overflow = open ? 'hidden' : ''
+    }
+
+    drawerToggle.addEventListener('click', () => {
+      setOpen(drawer.dataset.open !== 'true')
+    })
+
+    drawer.querySelectorAll('[data-drawer-close]').forEach((el) => {
+      el.addEventListener('click', () => setOpen(false))
+    })
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && drawer.dataset.open === 'true') setOpen(false)
+    })
+  }
+</script>
