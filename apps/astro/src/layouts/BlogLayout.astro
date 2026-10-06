@@ -1,0 +1,62 @@
+---
+/**
+ * Dusk UI — 博客 Demo 布局
+ * ─────────────────────────────────────────────────────────
+ * 与演示页 Layout 的关系：两者互不包含，各自负责自己的页面骨架。
+ * 相同的是：
+ * - 样式都来自 @dusk-ui/ui/styles.css（同一份令牌）；
+ * - 首屏脚本都先于绘制应用主题，避免深浅闪烁。
+ *
+ * 站点导航（悬浮胶囊）在 components/BlogNav.astro，抽屉与滚动监听都是
+ * 原生脚本，不新增 Island；唯一需要 hydrate 的是主题切换（要读写 localStorage）。
+ */
+
+import '@dusk-ui/ui/styles.css'
+import BlogNav from '../components/BlogNav.astro'
+
+interface Props {
+  title: string
+  description: string
+}
+
+const { title, description } = Astro.props
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <script is:inline>
+      // 与演示页 Layout 中的脚本逐字一致：两份手写脚本必须同时更新。
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('dusk-ui-theme')
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          var dark = stored ? stored === 'dark' : prefersDark
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (e) {
+          /* localStorage 不可用时静默降级为浅色 */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <BlogNav />
+
+    <slot />
+
+    <footer class="mx-auto max-w-[var(--page-max-width)] px-[var(--gutter)] pb-12">
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-6 text-xs text-foreground-muted"
+      >
+        <p>Dusklight · 博客 Demo · 内容均为示例占位数据</p>
+        <a href="/" class="transition-colors hover:text-foreground">← 返回组件展示页</a>
+      </div>
+    </footer>
+  </body>
+</html>
