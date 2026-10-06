@@ -248,7 +248,15 @@ for (const name of mentioned) {
 
 /* ── 13. Astro 工程结构与用法约束 ── */
 {
-  const astroPage = [...sources.entries()].find(([f]) => f.endsWith('index.astro'))
+  /**
+   * 展示页必须按路径精确定位。
+   *
+   * 博客 Demo 带来了多个同名文件（pages/blog/index.astro 等），
+   * 只按文件名匹配会随机落在其中一个上，使检查对象变成别人的页面。
+   */
+  const astroPage = [...sources.entries()].find(([f]) =>
+    f.endsWith('apps/astro/src/pages/index.astro'),
+  )
   const page = astroPage?.[1] ?? ''
 
   check('Astro 页面存在', Boolean(page))
@@ -328,11 +336,19 @@ for (const name of mentioned) {
   ) ?? ''
   check('React 工程引入共享样式', reactMain.includes('@dusk-ui/ui/styles.css'))
 
-  // Astro 的样式在 Layout 中引入（页面不重复引入）
-  const astroLayout = sources.get(
-    [...sources.keys()].find((f) => f.endsWith('Layout.astro')),
-  ) ?? ''
-  check('Astro Layout 引入共享样式', astroLayout.includes('@dusk-ui/ui/styles.css'))
+  // Astro 的样式在 Layout 中引入（页面不重复引入）。
+  // 工程里有多个布局（演示页与博客），每个都必须引入共享样式，
+  // 少一个就是整站失去样式。
+  const layoutFiles = [...sources.entries()].filter(([f]) => f.endsWith('Layout.astro'))
+  check('Astro 至少有一个布局', layoutFiles.length > 0, `${layoutFiles.length} 个`)
+  for (const [file, code] of layoutFiles) {
+    const name = file.split('/').pop()
+    check(`Astro Layout ${name} 引入共享样式`, code.includes('@dusk-ui/ui/styles.css'))
+  }
+
+  const astroLayout = [...sources.entries()].find(([f]) =>
+    f.endsWith('apps/astro/src/layouts/Layout.astro'),
+  )?.[1] ?? ''
   check('Astro Layout 含首屏主题脚本', astroLayout.includes('dusk-ui-theme'))
 }
 
